@@ -3,3 +3,22 @@
 # https://gqlgen.com/getting-started/
 
 
+input NewMovie {
+  title: String!
+  description: String!
+}
+
+input UpdateMovie {
+  title: String
+  description: String
+}
+
+
+type Mutation {
+  CreateMovie(input: NewMovie!): ID! @isAuthenticated 
+  UpdateMovie(input: UpdateMovie!): String! @isAuthenticated 
+  DeleteMovie(movieID: ID!): String! @isAuthenticated
+}
+
+
+directive @isAuthenticated on FIELD_DEFINITION

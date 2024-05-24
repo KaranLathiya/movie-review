@@ -19,17 +19,17 @@ import (
 func (r *mutationResolver) UserSignup(ctx context.Context, input request.UserSignup) (string, error) {
 	err := utils.ValidateStruct(input, nil)
 	if err != nil {
-		return "", err
+		return constant.EMPTY_STRING, err
 	}
 	hashedPassword, err := utils.Bcrypt(input.Password)
 	if err != nil {
-		return "", err
+		return constant.EMPTY_STRING, err
 	}
 	input.Password = hashedPassword
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
 	err = repo.UserSignup(input)
 	if err != nil {
-		return "", err
+		return constant.EMPTY_STRING, err
 	}
 	return constant.SIGNUP_SUCCESS, nil
 }
@@ -51,8 +51,3 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	}
 	return &model.Token{AccessToken: accessToken}, nil
 }
-
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }

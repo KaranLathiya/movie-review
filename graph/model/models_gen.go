@@ -11,3 +11,8 @@ type Query struct {
 type Token struct {
 	AccessToken string `json:"AccessToken"`
 }
+
+type UpdateMovie struct {
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+}

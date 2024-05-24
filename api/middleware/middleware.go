@@ -6,10 +6,16 @@ import (
 	"net/http"
 )
 
-var RepoCtxKey = &contextKey{nil}
+var RepoCtxKey = &repoContextKey{nil}
 
-type contextKey struct {
+type repoContextKey struct {
 	repos *repository.Repositories
+}
+
+var UserCtxKey = &userContextKey{""}
+
+type userContextKey struct {
+	token string
 }
 
 func AddRepoToContext(repos *repository.Repositories) (func(http.Handler) http.Handler) {
@@ -20,3 +26,23 @@ func AddRepoToContext(repos *repository.Repositories) (func(http.Handler) http.H
 		})
 	}
 }
+
+
+func Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.Header.Get("Authorization")
+		
+		// Allow unauthenticated users in
+		if accessToken == "" {
+			ctx := context.WithValue(r.Context(), UserCtxKey, "")
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), UserCtxKey, accessToken)
+
+		// and call the next with our new context
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+

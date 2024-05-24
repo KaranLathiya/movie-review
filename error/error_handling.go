@@ -71,7 +71,7 @@ var (
 	JWTErrSignatureInvalid = CreateCustomError("Invalid signature on jwt token.", http.StatusUnauthorized)
 	JWTTokenInvalid        = CreateCustomError("Invalid jwt token.", http.StatusBadRequest)
 	JWTTokenInvalidDetails = CreateCustomError("Invalid jwt token details.", http.StatusBadRequest)
-	JWTTokenGenerateError = CreateCustomError("Error at generating jwt token.", http.StatusInternalServerError)
+	JWTTokenGenerateError  = CreateCustomError("Error at generating jwt token.", http.StatusInternalServerError)
 
 	NotNullConstraintError    = CreateCustomError("Required field cannot be empty or null. Please provide a value for the field.", http.StatusBadRequest)
 	ForeignKeyConstraintError = CreateCustomError("Data doesn't exist.", http.StatusConflict)

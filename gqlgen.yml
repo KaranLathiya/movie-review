@@ -85,6 +85,8 @@ models:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
+  NewMovie:
+    model: movie-review/api/model/request.NewMovie
   UserSignup:
     model: movie-review/api/model/request.UserSignup
   UserLogin:
