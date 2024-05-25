@@ -6,12 +6,11 @@ package graph
 
 import (
 	"context"
-	"fmt"
-	"movie-review/api/constant"
 	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
-	"movie-review/graph/model"
+	"movie-review/constant"
+	error_handling "movie-review/error"
 	"movie-review/utils"
 )
 
@@ -25,31 +24,43 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input request.NewMov
 	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
 	movieID, err := repo.CreateMovie(userID, input)
 	if err != nil {
+		if err == error_handling.ForeignKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
+		}
 		return constant.EMPTY_STRING, err
 	}
 	return movieID, nil
 }
 
 // UpdateMovie is the resolver for the UpdateMovie field.
-func (r *mutationResolver) UpdateMovie(ctx context.Context, input model.UpdateMovie) (string, error) {
-	panic(fmt.Errorf("not implemented: UpdateMovie - UpdateMovie"))
-}
-
-// DeleteMovie is the resolver for the DeleteMovie field.
-func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (string, error) {
-	err := utils.ValidateStruct(movieID, nil)
+func (r *mutationResolver) UpdateMovie(ctx context.Context, input request.UpdateMovie) (string, error) {
+	err := utils.ValidateStruct(input, nil)
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	err = repo.DeleteMovie(movieID)
+	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
+	err = repo.UpdateMovie(userID, input)
 	if err != nil {
+		if err == error_handling.NoRowsAffectedError {
+			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
+		} else if err == error_handling.ForeignKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
+		}
 		return constant.EMPTY_STRING, err
 	}
-	return movieID, nil
+	return constant.MOVIE_UPDATED, nil
 }
 
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }
+// DeleteMovie is the resolver for the DeleteMovie field.
+func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (string, error) {
+	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	err := repo.DeleteMovie(movieID)
+	if err != nil {
+		if err == error_handling.NoRowsAffectedError {
+			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
+		}
+		return constant.EMPTY_STRING, err
+	}
+	return constant.MOVIE_DELETED, nil
+}

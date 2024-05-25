@@ -2,8 +2,8 @@ package dal
 
 import (
 	"database/sql"
+	"movie-review/constant"
 	"movie-review/api/model/request"
-	"movie-review/api/constant"
 	"movie-review/utils"
 
 	error_handling "movie-review/error"
@@ -29,4 +29,13 @@ func UserLogin(db *sql.DB, user request.UserLogin) (string, error) {
 	} else {
 		return constant.EMPTY_STRING, error_handling.InvalidDetails
 	}
+}
+
+func CheckRoleOfUser(db *sql.DB, userID string) (string, error) {
+	var role string
+	err := db.QueryRow("SELECT role from users WHERE id = $1", userID).Scan(&role)
+	if err != nil {
+		return constant.EMPTY_STRING, error_handling.DatabaseErrorShow(err)
+	}
+	return role, nil
 }

@@ -22,12 +22,13 @@ func main() {
 	}
 	db := db.Connect()
 	defer db.Close()
-	repos := repository.InitRepositories(db)
+	repo := repository.InitRepositories(db)
 	router := chi.NewRouter()
 	router.Use(middleware.HandleCORS)
-	router.Use(middleware.AddRepoToContext(repos))
+	router.Use(middleware.Middleware)
+	router.Use(middleware.AddRepoToContext(repo))
 	
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.NewRootResolvers(db)))
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.NewRootResolvers(repo)))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)

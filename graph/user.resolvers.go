@@ -6,10 +6,11 @@ package graph
 
 import (
 	"context"
-	"movie-review/api/constant"
 	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
+	"movie-review/constant"
+	error_handling "movie-review/error"
 	"movie-review/graph/model"
 	"movie-review/utils"
 	"time"
@@ -29,6 +30,9 @@ func (r *mutationResolver) UserSignup(ctx context.Context, input request.UserSig
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
 	err = repo.UserSignup(input)
 	if err != nil {
+		if err == error_handling.UniqueKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.UserAlreadyExist
+		}
 		return constant.EMPTY_STRING, err
 	}
 	return constant.SIGNUP_SUCCESS, nil
@@ -47,7 +51,15 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	}
 	accessToken, err := utils.CreateJWT(time.Now().UTC().Add(time.Minute*time.Duration(60)), userID)
 	if err != nil {
+		if err == error_handling.NoRowsError {
+			return nil, error_handling.UserDoesNotExist
+		}
 		return nil, err
 	}
 	return &model.Token{AccessToken: accessToken}, nil
 }
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }

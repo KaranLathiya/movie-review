@@ -91,3 +91,10 @@ models:
     model: movie-review/api/model/request.UserSignup
   UserLogin:
     model: movie-review/api/model/request.UserLogin
+  UpdateMovie:
+    model: movie-review/api/model/request.UpdateMovie
+  NewMovieReview:
+    model: movie-review/api/model/request.NewMovieReview
+  UpdateMovieReview:
+    model: movie-review/api/model/request.UpdateMovieReview
+    

@@ -9,16 +9,18 @@ input NewMovie {
 }
 
 input UpdateMovie {
+  id: ID!
   title: String
   description: String
 }
 
 
-type Mutation {
-  CreateMovie(input: NewMovie!): ID! @isAuthenticated 
-  UpdateMovie(input: UpdateMovie!): String! @isAuthenticated 
-  DeleteMovie(movieID: ID!): String! @isAuthenticated
+extend type Mutation {
+  CreateMovie(input: NewMovie!): ID! @isAdmin @isAuthenticated
+  UpdateMovie(input: UpdateMovie!): String! @isAdmin @isAuthenticated
+  DeleteMovie(movieID: ID!): String! @isAdmin @isAuthenticated
 }
 
 
 directive @isAuthenticated on FIELD_DEFINITION
+directive @isAdmin on FIELD_DEFINITION

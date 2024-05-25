@@ -21,6 +21,7 @@ func init() {
 	validate.AddGlobalMessages(map[string]string{
 		// "required": "oh! the {field} is required",
 		"passwordRegex": "{field} atleast contain one small letter, one capital letter, one digit and one special character.",
+		// "emailOrPhoneNumber": "phoneNumber and countryCode must be null with the email",
 	})
 }
 
@@ -60,24 +61,28 @@ func CreateCustomError(errorMessage string, statusCode int, invalidData ...Inval
 }
 
 var (
-	MarshalError           = CreateCustomError("Error while marshling data.", http.StatusInternalServerError)
-	UnmarshalError         = CreateCustomError("Error while unmarshling data.", http.StatusBadRequest)
-	InternalServerError    = CreateCustomError("Internal Server Error.", http.StatusInternalServerError)
-	BcryptError            = CreateCustomError("Error at bcypting.", http.StatusInternalServerError)
-	UserAlreadyExist       = CreateCustomError("User already exist.", http.StatusBadRequest)
-	UserDoesNotExist       = CreateCustomError("User does not exist.", http.StatusNotFound)
-	HeaderDataMissing      = CreateCustomError("Required header not found.", http.StatusBadRequest)
-	InvalidDetails         = CreateCustomError("Invalid details provided.", http.StatusBadRequest)
-	JWTErrSignatureInvalid = CreateCustomError("Invalid signature on jwt token.", http.StatusUnauthorized)
-	JWTTokenInvalid        = CreateCustomError("Invalid jwt token.", http.StatusBadRequest)
-	JWTTokenInvalidDetails = CreateCustomError("Invalid jwt token details.", http.StatusBadRequest)
-	JWTTokenGenerateError  = CreateCustomError("Error at generating jwt token.", http.StatusInternalServerError)
+	MarshalError            = CreateCustomError("Error while marshling data.", http.StatusInternalServerError)
+	UnmarshalError          = CreateCustomError("Error while unmarshling data.", http.StatusBadRequest)
+	InternalServerError     = CreateCustomError("Internal Server Error.", http.StatusInternalServerError)
+	BcryptError             = CreateCustomError("Error at bcypting.", http.StatusInternalServerError)
+	UserAlreadyExist        = CreateCustomError("User already exist.", http.StatusBadRequest)
+	UserDoesNotExist        = CreateCustomError("User does not exist.", http.StatusNotFound)
+	MovieDoesNotExist       = CreateCustomError("Movie does not exist.", http.StatusNotFound)
+	MovieReviewDoesNotExist = CreateCustomError("Movie review does not exist.", http.StatusNotFound)
+	HeaderDataMissing       = CreateCustomError("Required header not found.", http.StatusBadRequest)
+	InvalidDetails          = CreateCustomError("Invalid details provided.", http.StatusBadRequest)
+	JWTErrSignatureInvalid  = CreateCustomError("Invalid signature on jwt token.", http.StatusUnauthorized)
+	JWTTokenInvalid         = CreateCustomError("Invalid jwt token.", http.StatusBadRequest)
+	JWTTokenInvalidDetails  = CreateCustomError("Invalid jwt token details.", http.StatusBadRequest)
+	JWTTokenGenerateError   = CreateCustomError("Error at generating jwt token.", http.StatusInternalServerError)
+	AdminAccessRights       = CreateCustomError("Only admin have permission.", http.StatusForbidden)
 
 	NotNullConstraintError    = CreateCustomError("Required field cannot be empty or null. Please provide a value for the field.", http.StatusBadRequest)
 	ForeignKeyConstraintError = CreateCustomError("Data doesn't exist.", http.StatusConflict)
 	UniqueKeyConstraintError  = CreateCustomError("Data already exists.", http.StatusConflict)
 	CheckConstraintError      = CreateCustomError("Data doesn't meet the required criteria.", http.StatusBadRequest)
 	NoRowsError               = CreateCustomError("Data doesn't exist.", http.StatusNotFound)
+	NoRowsAffectedError       = CreateCustomError("No data change.", http.StatusNotFound)
 )
 
 func DatabaseErrorShow(err error) error {

@@ -1,0 +1,23 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+
+input NewMovieReview {
+  movieID: ID!
+  comment: String!
+  rating: Int!
+}
+
+input UpdateMovieReview {
+  id: ID!
+  comment: String
+  rating: Int
+}
+
+
+extend type Mutation {
+  CreateMovieReview(input: NewMovieReview!): ID! @isAuthenticated
+  DeleteMovieReview(reviewID: ID!): String! @isAuthenticated
+  UpdateMovieReview(input: UpdateMovieReview!): String! @isAuthenticated
+}

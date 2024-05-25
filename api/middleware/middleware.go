@@ -12,7 +12,7 @@ type repoContextKey struct {
 	repos *repository.Repositories
 }
 
-var UserCtxKey = &userContextKey{""}
+var UserCtxKey = &userContextKey{"token"}
 
 type userContextKey struct {
 	token string
@@ -43,6 +43,6 @@ func Middleware(next http.Handler) http.Handler {
 
 		// and call the next with our new context
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	}) 
 }
 

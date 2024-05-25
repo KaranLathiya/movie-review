@@ -15,7 +15,7 @@ type Token {
   AccessToken: String!
 }
 
-extend type Mutation {
+type Mutation {
   UserSignup(input: UserSignup!): String!
   UserLogin(input: UserLogin!): Token!
 }
