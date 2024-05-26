@@ -5,7 +5,6 @@ import (
 	"movie-review/api/dal"
 	"movie-review/api/model/request"
 	"movie-review/constant"
-	error_handling "movie-review/error"
 )
 
 type Repositories struct {
@@ -49,50 +48,31 @@ func (r *Repositories) DeleteMovie(movieID string) error {
 }
 
 func (r *Repositories) CreateMovieReview(userID string, review request.NewMovieReview) (string, error) {
-	tx, err := r.db.Begin()
+	reviewID, err := dal.CreateMovieReview(r.db, userID, review)
 	if err != nil {
-		return constant.EMPTY_STRING, error_handling.InternalServerError
-	}
-	reviewID, err := dal.CreateMovieReview(tx, userID, review)
-	if err != nil {
-		defer tx.Rollback()
 		return constant.EMPTY_STRING, err
 	}
-	err = dal.UpdateAverageRatingOfMovie(tx, review.MovieID)
-	if err != nil {
-		defer tx.Rollback()
-		return constant.EMPTY_STRING, err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return constant.EMPTY_STRING, error_handling.InternalServerError
-	}
+	go dal.UpdateAverageRatingOfMovie(r.db, review.MovieID)
 	return reviewID, nil
 }
 
 func (r *Repositories) UpdateMovieReview(userID string, movie request.UpdateMovieReview) error {
-	return dal.UpdateMovieReview(r.db, userID, movie)
+	movieID, err := dal.UpdateMovieReview(r.db, userID, movie)
+	if err != nil {
+		return err
+	}
+	if movie.Rating != nil {
+		go dal.UpdateAverageRatingOfMovie(r.db, movieID)
+	}
+	return nil
 }
 
 func (r *Repositories) DeleteMovieReview(userID string, reviewID string) error {
-	tx, err := r.db.Begin()
+	movieID, err := dal.DeleteMovieReview(r.db, userID, reviewID)
 	if err != nil {
-		return error_handling.InternalServerError
-	}
-	movieID, err := dal.DeleteMovieReview(tx, userID, reviewID)
-	if err != nil {
-		defer tx.Rollback()
 		return err
 	}
-	err = dal.UpdateAverageRatingOfMovie(tx, movieID)
-	if err != nil {
-		defer tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return error_handling.InternalServerError
-	}
+	go dal.UpdateAverageRatingOfMovie(r.db, movieID)
 	return nil
 }
 

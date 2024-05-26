@@ -68,8 +68,8 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	return nil
 }
 
-func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
-	_, err := tx.Exec(`
+func UpdateAverageRatingOfMovie(db *sql.DB, movieID string) error {
+	_, err := db.Exec(`
 	WITH avg_rating AS (
         SELECT
             AVG(rating) AS avg_rating
