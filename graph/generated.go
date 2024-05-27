@@ -54,15 +54,28 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Movie struct {
-		AverageRating func(childComplexity int) int
-		CreatedAt     func(childComplexity int) int
-		Description   func(childComplexity int) int
-		DirectorID    func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Reviews       func(childComplexity int, limit *int, offset *int) int
-		Title         func(childComplexity int) int
-		UpdatedAt     func(childComplexity int) int
-		UpdatedBy     func(childComplexity int) int
+		AverageRating   func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		Description     func(childComplexity int) int
+		Director        func(childComplexity int) int
+		DirectorID      func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Reviews         func(childComplexity int, limit *int, offset *int) int
+		Title           func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		UpdatedBy       func(childComplexity int) int
+		UpdatedByUserID func(childComplexity int) int
+	}
+
+	MovieReview struct {
+		Comment    func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		ID         func(childComplexity int) int
+		MovieID    func(childComplexity int) int
+		Rating     func(childComplexity int) int
+		Reviewer   func(childComplexity int) int
+		ReviewerID func(childComplexity int) int
+		UpdatedAt  func(childComplexity int) int
 	}
 
 	MovieReviewNotification struct {
@@ -85,15 +98,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		FetchMovies func(childComplexity int, movieName *string, limit *int, offset *int) int
-	}
-
-	Review struct {
-		Comment    func(childComplexity int) int
-		ID         func(childComplexity int) int
-		MovieID    func(childComplexity int) int
-		Rating     func(childComplexity int) int
-		ReviewerID func(childComplexity int) int
+		FetchMovies func(childComplexity int, movieName string, limit *int, offset *int) int
 	}
 
 	Subscription struct {
@@ -106,7 +111,7 @@ type ComplexityRoot struct {
 }
 
 type MovieResolver interface {
-	Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.Review, error)
+	Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.MovieReview, error)
 }
 type MutationResolver interface {
 	UserSignup(ctx context.Context, input request.UserSignup) (string, error)
@@ -119,7 +124,7 @@ type MutationResolver interface {
 	UpdateMovieReview(ctx context.Context, input request.UpdateMovieReview) (string, error)
 }
 type QueryResolver interface {
-	FetchMovies(ctx context.Context, movieName *string, limit *int, offset *int) ([]*model.Movie, error)
+	FetchMovies(ctx context.Context, movieName string, limit *int, offset *int) ([]*model.Movie, error)
 }
 type SubscriptionResolver interface {
 	MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error)
@@ -164,6 +169,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Movie.Description(childComplexity), true
+
+	case "Movie.director":
+		if e.complexity.Movie.Director == nil {
+			break
+		}
+
+		return e.complexity.Movie.Director(childComplexity), true
 
 	case "Movie.directorID":
 		if e.complexity.Movie.DirectorID == nil {
@@ -211,6 +223,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Movie.UpdatedBy(childComplexity), true
+
+	case "Movie.updatedByUserID":
+		if e.complexity.Movie.UpdatedByUserID == nil {
+			break
+		}
+
+		return e.complexity.Movie.UpdatedByUserID(childComplexity), true
+
+	case "MovieReview.comment":
+		if e.complexity.MovieReview.Comment == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Comment(childComplexity), true
+
+	case "MovieReview.createdAt":
+		if e.complexity.MovieReview.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.CreatedAt(childComplexity), true
+
+	case "MovieReview.id":
+		if e.complexity.MovieReview.ID == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.ID(childComplexity), true
+
+	case "MovieReview.movieID":
+		if e.complexity.MovieReview.MovieID == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.MovieID(childComplexity), true
+
+	case "MovieReview.rating":
+		if e.complexity.MovieReview.Rating == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Rating(childComplexity), true
+
+	case "MovieReview.reviewer":
+		if e.complexity.MovieReview.Reviewer == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Reviewer(childComplexity), true
+
+	case "MovieReview.reviewerID":
+		if e.complexity.MovieReview.ReviewerID == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.ReviewerID(childComplexity), true
+
+	case "MovieReview.updatedAt":
+		if e.complexity.MovieReview.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.UpdatedAt(childComplexity), true
 
 	case "MovieReviewNotification.comment":
 		if e.complexity.MovieReviewNotification.Comment == nil {
@@ -353,42 +428,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.FetchMovies(childComplexity, args["movieName"].(*string), args["limit"].(*int), args["offset"].(*int)), true
-
-	case "Review.comment":
-		if e.complexity.Review.Comment == nil {
-			break
-		}
-
-		return e.complexity.Review.Comment(childComplexity), true
-
-	case "Review.id":
-		if e.complexity.Review.ID == nil {
-			break
-		}
-
-		return e.complexity.Review.ID(childComplexity), true
-
-	case "Review.movieID":
-		if e.complexity.Review.MovieID == nil {
-			break
-		}
-
-		return e.complexity.Review.MovieID(childComplexity), true
-
-	case "Review.rating":
-		if e.complexity.Review.Rating == nil {
-			break
-		}
-
-		return e.complexity.Review.Rating(childComplexity), true
-
-	case "Review.reviewerID":
-		if e.complexity.Review.ReviewerID == nil {
-			break
-		}
-
-		return e.complexity.Review.ReviewerID(childComplexity), true
+		return e.complexity.Query.FetchMovies(childComplexity, args["movieName"].(string), args["limit"].(*int), args["offset"].(*int)), true
 
 	case "Subscription.movieReviewNotification":
 		if e.complexity.Subscription.MovieReviewNotification == nil {
@@ -705,10 +745,10 @@ func (ec *executionContext) field_Mutation_UserSignup_args(ctx context.Context, 
 func (ec *executionContext) field_Query_FetchMovies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 string
 	if tmp, ok := rawArgs["movieName"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movieName"))
-		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1052,8 +1092,8 @@ func (ec *executionContext) fieldContext_Movie_updatedAt(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Movie_updatedBy(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Movie_updatedBy(ctx, field)
+func (ec *executionContext) _Movie_updatedByUserID(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_updatedByUserID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1066,7 +1106,7 @@ func (ec *executionContext) _Movie_updatedBy(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
+		return obj.UpdatedByUserID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1080,7 +1120,7 @@ func (ec *executionContext) _Movie_updatedBy(ctx context.Context, field graphql.
 	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Movie_updatedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Movie_updatedByUserID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Movie",
 		Field:      field,
@@ -1116,9 +1156,9 @@ func (ec *executionContext) _Movie_reviews(ctx context.Context, field graphql.Co
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Review)
+	res := resTmp.([]*model.MovieReview)
 	fc.Result = res
-	return ec.marshalOReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐReview(ctx, field.Selections, res)
+	return ec.marshalOMovieReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReview(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Movie_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1130,17 +1170,23 @@ func (ec *executionContext) fieldContext_Movie_reviews(ctx context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "movieID":
-				return ec.fieldContext_Review_movieID(ctx, field)
+				return ec.fieldContext_MovieReview_movieID(ctx, field)
 			case "comment":
-				return ec.fieldContext_Review_comment(ctx, field)
+				return ec.fieldContext_MovieReview_comment(ctx, field)
 			case "rating":
-				return ec.fieldContext_Review_rating(ctx, field)
+				return ec.fieldContext_MovieReview_rating(ctx, field)
 			case "reviewerID":
-				return ec.fieldContext_Review_reviewerID(ctx, field)
+				return ec.fieldContext_MovieReview_reviewerID(ctx, field)
 			case "id":
-				return ec.fieldContext_Review_id(ctx, field)
+				return ec.fieldContext_MovieReview_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_MovieReview_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_MovieReview_updatedAt(ctx, field)
+			case "reviewer":
+				return ec.fieldContext_MovieReview_reviewer(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type MovieReview", field.Name)
 		},
 	}
 	defer func() {
@@ -1193,6 +1239,416 @@ func (ec *executionContext) fieldContext_Movie_averageRating(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_director(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_director(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Director, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_director(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_updatedBy(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_updatedBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_updatedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_movieID(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_movieID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MovieID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_movieID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_comment(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_comment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comment, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_comment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_rating(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_rating(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rating, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_rating(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_reviewerID(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_reviewerID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReviewerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_reviewerID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_id(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOTimestamp2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Timestamp does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOTimestamp2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Timestamp does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_reviewer(ctx context.Context, field graphql.CollectedField, obj *model.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_reviewer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reviewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_reviewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2015,7 +2471,7 @@ func (ec *executionContext) _Query_FetchMovies(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().FetchMovies(rctx, fc.Args["movieName"].(*string), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+			return ec.resolvers.Query().FetchMovies(rctx, fc.Args["movieName"].(string), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.IsAuthenticated == nil {
@@ -2071,12 +2527,16 @@ func (ec *executionContext) fieldContext_Query_FetchMovies(ctx context.Context, 
 				return ec.fieldContext_Movie_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Movie_updatedAt(ctx, field)
-			case "updatedBy":
-				return ec.fieldContext_Movie_updatedBy(ctx, field)
+			case "updatedByUserID":
+				return ec.fieldContext_Movie_updatedByUserID(ctx, field)
 			case "reviews":
 				return ec.fieldContext_Movie_reviews(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "director":
+				return ec.fieldContext_Movie_director(ctx, field)
+			case "updatedBy":
+				return ec.fieldContext_Movie_updatedBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
 		},
@@ -2219,211 +2679,6 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Review_movieID(ctx context.Context, field graphql.CollectedField, obj *model.Review) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Review_movieID(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.MovieID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Review_movieID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Review",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Review_comment(ctx context.Context, field graphql.CollectedField, obj *model.Review) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Review_comment(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Comment, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Review_comment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Review",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Review_rating(ctx context.Context, field graphql.CollectedField, obj *model.Review) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Review_rating(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Rating, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Review_rating(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Review",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Review_reviewerID(ctx context.Context, field graphql.CollectedField, obj *model.Review) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Review_reviewerID(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ReviewerID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Review_reviewerID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Review",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Review_id(ctx context.Context, field graphql.CollectedField, obj *model.Review) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Review_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Review_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Review",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4620,8 +4875,8 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Movie_createdAt(ctx, field, obj)
 		case "updatedAt":
 			out.Values[i] = ec._Movie_updatedAt(ctx, field, obj)
-		case "updatedBy":
-			out.Values[i] = ec._Movie_updatedBy(ctx, field, obj)
+		case "updatedByUserID":
+			out.Values[i] = ec._Movie_updatedByUserID(ctx, field, obj)
 		case "reviews":
 			field := field
 
@@ -4657,6 +4912,60 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "averageRating":
 			out.Values[i] = ec._Movie_averageRating(ctx, field, obj)
+		case "director":
+			out.Values[i] = ec._Movie_director(ctx, field, obj)
+		case "updatedBy":
+			out.Values[i] = ec._Movie_updatedBy(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var movieReviewImplementors = []string{"MovieReview"}
+
+func (ec *executionContext) _MovieReview(ctx context.Context, sel ast.SelectionSet, obj *model.MovieReview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, movieReviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MovieReview")
+		case "movieID":
+			out.Values[i] = ec._MovieReview_movieID(ctx, field, obj)
+		case "comment":
+			out.Values[i] = ec._MovieReview_comment(ctx, field, obj)
+		case "rating":
+			out.Values[i] = ec._MovieReview_rating(ctx, field, obj)
+		case "reviewerID":
+			out.Values[i] = ec._MovieReview_reviewerID(ctx, field, obj)
+		case "id":
+			out.Values[i] = ec._MovieReview_id(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._MovieReview_createdAt(ctx, field, obj)
+		case "updatedAt":
+			out.Values[i] = ec._MovieReview_updatedAt(ctx, field, obj)
+		case "reviewer":
+			out.Values[i] = ec._MovieReview_reviewer(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4886,50 +5195,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var reviewImplementors = []string{"Review"}
-
-func (ec *executionContext) _Review(ctx context.Context, sel ast.SelectionSet, obj *model.Review) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, reviewImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Review")
-		case "movieID":
-			out.Values[i] = ec._Review_movieID(ctx, field, obj)
-		case "comment":
-			out.Values[i] = ec._Review_comment(ctx, field, obj)
-		case "rating":
-			out.Values[i] = ec._Review_rating(ctx, field, obj)
-		case "reviewerID":
-			out.Values[i] = ec._Review_reviewerID(ctx, field, obj)
-		case "id":
-			out.Values[i] = ec._Review_id(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5837,7 +6102,7 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
-func (ec *executionContext) marshalOReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐReview(ctx context.Context, sel ast.SelectionSet, v []*model.Review) graphql.Marshaler {
+func (ec *executionContext) marshalOMovieReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReview(ctx context.Context, sel ast.SelectionSet, v []*model.MovieReview) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5864,7 +6129,7 @@ func (ec *executionContext) marshalOReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodel�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOReview2ᚖmovieᚑreviewᚋgraphᚋmodelᚐReview(ctx, sel, v[i])
+			ret[i] = ec.marshalOMovieReview2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReview(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5878,11 +6143,11 @@ func (ec *executionContext) marshalOReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodel�
 	return ret
 }
 
-func (ec *executionContext) marshalOReview2ᚖmovieᚑreviewᚋgraphᚋmodelᚐReview(ctx context.Context, sel ast.SelectionSet, v *model.Review) graphql.Marshaler {
+func (ec *executionContext) marshalOMovieReview2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReview(ctx context.Context, sel ast.SelectionSet, v *model.MovieReview) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._Review(ctx, sel, v)
+	return ec._MovieReview(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

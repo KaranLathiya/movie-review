@@ -6,6 +6,7 @@ import (
 	"movie-review/api/model/request"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/model"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -68,6 +69,25 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	return nil
 }
 
+func FetchMovies(db *sql.DB, movieName string, limit int, offset int) ([]*model.Movie, error) {
+	query := "SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, CONCAT(u1.first_name, ' ', u1.last_name) AS director_name, CONCAT(u2.first_name, ' ', u2.last_name) AS updater_name FROM movie m LEFT JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id WHERE m.title ILIKE '%' || ? || '%' ORDER BY created_at DESC LIMIT ? OFFSET ? "
+	query = sqlx.Rebind(sqlx.DOLLAR, query)
+	rows, err := db.Query(query, movieName, limit, offset)
+	if err != nil {
+		return nil, error_handling.DatabaseErrorHandling(err)
+	}
+	var movies []*model.Movie
+	for rows.Next() {
+		var movie model.Movie
+		err = rows.Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.Director, &movie.UpdatedBy)
+		if err != nil {
+			return nil, error_handling.InternalServerError
+		}
+		movies = append(movies, &movie)
+	}
+	return movies, nil
+}
+
 func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
 	result, err := tx.Exec(`
 	WITH avg_rating AS (
@@ -93,3 +113,5 @@ func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
 	}
 	return nil
 }
+
+

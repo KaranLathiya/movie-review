@@ -6,6 +6,7 @@ import (
 	"movie-review/api/model/request"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/model"
 )
 
 type Repositories struct {
@@ -26,6 +27,8 @@ type Repository interface {
 	CreateMovieReview(userID string, review request.NewMovieReview) (string, error)
 	DeleteMovieReview(reviewID string) error
 	UpdateMovieReview(userID string, movie request.UpdateMovieReview) error
+	FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error)
+	FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error)
 }
 
 func (r *Repositories) UserSignup(user request.UserSignup) error {
@@ -152,4 +155,12 @@ func (r *Repositories) DeleteMovieReview(userID string, reviewID string) error {
 
 func (r *Repositories) CheckRoleOfUser(userID string) (string, error) {
 	return dal.CheckRoleOfUser(r.db, userID)
+}
+
+func (r *Repositories) FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error) {
+	return dal.FetchMovies(r.db, movieName, limit, offset)
+}
+
+func (r *Repositories) FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error) {
+	return dal.FetchMovieReviews(r.db, movieID, limit, offset)
 }

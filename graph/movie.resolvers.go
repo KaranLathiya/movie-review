@@ -17,8 +17,13 @@ import (
 )
 
 // Reviews is the resolver for the reviews field.
-func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.Review, error) {
-	panic(fmt.Errorf("not implemented: Reviews - reviews"))
+func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.MovieReview, error) {
+	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	movieReviews, err := repo.FetchMovieReviews(obj.ID, *limit, *offset)
+	if err != nil {
+		return nil, err
+	}
+	return movieReviews, nil
 }
 
 // CreateMovie is the resolver for the CreateMovie field.
@@ -72,8 +77,13 @@ func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (str
 }
 
 // FetchMovies is the resolver for the FetchMovies field.
-func (r *queryResolver) FetchMovies(ctx context.Context, movieName *string, limit *int, offset *int) ([]*model.Movie, error) {
-	panic(fmt.Errorf("not implemented: FetchMovies - FetchMovies"))
+func (r *queryResolver) FetchMovies(ctx context.Context, movieName string, limit *int, offset *int) ([]*model.Movie, error) {
+	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	movies, err := repo.FetchMovies(movieName, *limit, *offset)
+	if err != nil {
+		return nil, err
+	}
+	return movies, nil
 }
 
 // Movie returns MovieResolver implementation.

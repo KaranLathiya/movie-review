@@ -21,9 +21,11 @@ type Movie {
   directorID: ID
   createdAt: Timestamp
   updatedAt: Timestamp
-  updatedBy:ID
-  reviews(limit: Int = 25, offset: Int = 0): [Review]
+  updatedByUserID:ID
+  reviews(limit: Int = 25, offset: Int = 0): [MovieReview]
   averageRating: Float
+  director:String
+  updatedBy:String
 }
 
 extend type Mutation {
@@ -33,7 +35,7 @@ extend type Mutation {
 }
 
 type Query {
-  FetchMovies(movieName: String, limit: Int = 25, offset: Int = 0): [Movie!]! @isAuthenticated
+  FetchMovies(movieName: String!, limit: Int = 25, offset: Int = 0): [Movie!]! @isAuthenticated
 }
 
 directive @isAuthenticated on FIELD_DEFINITION

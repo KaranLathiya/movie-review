@@ -23,12 +23,15 @@ type MovieReviewNotification{
   id: ID!
 }
 
-type Review{
+type MovieReview{
   movieID: ID
   comment: String
   rating: Int
   reviewerID: ID
   id: ID
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  reviewer:String
 }
 
 extend type Mutation {

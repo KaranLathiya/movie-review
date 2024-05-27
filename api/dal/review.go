@@ -6,6 +6,7 @@ import (
 	"movie-review/api/model/request"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/model"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -67,4 +68,23 @@ func DeleteMovieReviews(tx *sql.Tx, movieID string) error {
 		return error_handling.DatabaseErrorHandling(err)
 	}
 	return nil
+}
+
+func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
+	query := "SELECT r.id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, CONCAT(u.first_name, ' ', u.last_name) AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ? "
+	query = sqlx.Rebind(sqlx.DOLLAR, query)
+	rows, err := db.Query(query, movieID, limit, offset)
+	if err != nil {
+		return nil, error_handling.DatabaseErrorHandling(err)
+	}
+	var movieReviews []*model.MovieReview
+	for rows.Next() {
+		var movieReview model.MovieReview
+		err = rows.Scan(&movieReview.ID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
+		if err != nil {
+			return nil, error_handling.InternalServerError
+		}
+		movieReviews = append(movieReviews, &movieReview)
+	}
+	return movieReviews, nil
 }
