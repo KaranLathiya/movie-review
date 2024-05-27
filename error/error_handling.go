@@ -1,7 +1,6 @@
 package error
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/gookit/validate"
@@ -65,10 +64,12 @@ var (
 	UnmarshalError          = CreateCustomError("Error while unmarshling data.", http.StatusBadRequest)
 	InternalServerError     = CreateCustomError("Internal Server Error.", http.StatusInternalServerError)
 	BcryptError             = CreateCustomError("Error at bcypting.", http.StatusInternalServerError)
-	UserAlreadyExist        = CreateCustomError("User already exist.", http.StatusBadRequest)
+	UserAlreadyExist        = CreateCustomError("User already exist.", http.StatusConflict)
 	UserDoesNotExist        = CreateCustomError("User does not exist.", http.StatusNotFound)
 	MovieDoesNotExist       = CreateCustomError("Movie does not exist.", http.StatusNotFound)
 	MovieReviewDoesNotExist = CreateCustomError("Movie review does not exist.", http.StatusNotFound)
+	MovieReviewAlreadyExist = CreateCustomError("Movie review already exist.", http.StatusConflict)
+	MovieTitleAlreadyExist  = CreateCustomError("Movie title already exist.", http.StatusConflict)
 	HeaderDataMissing       = CreateCustomError("Required header not found.", http.StatusBadRequest)
 	InvalidDetails          = CreateCustomError("Invalid details provided.", http.StatusBadRequest)
 	JWTErrSignatureInvalid  = CreateCustomError("Invalid signature on jwt token.", http.StatusUnauthorized)
@@ -85,10 +86,7 @@ var (
 	NoRowsAffectedError       = CreateCustomError("No data change.", http.StatusNotFound)
 )
 
-func DatabaseErrorShow(err error) error {
-	if err == sql.ErrNoRows {
-		return NoRowsError
-	}
+func DatabaseErrorHandling(err error) error {
 	if dbErr, ok := err.(*pq.Error); ok {
 		errCode := dbErr.Code
 		switch errCode {

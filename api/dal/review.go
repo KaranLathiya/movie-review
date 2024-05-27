@@ -11,25 +11,28 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func CreateMovieReview(db *sql.DB, userID string, review request.NewMovieReview) (string, error) {
+func CreateMovieReview(tx *sql.Tx, userID string, review request.NewMovieReview) (string, error) {
 	var reviewID string
-	err := db.QueryRow("INSERT INTO review (movie_id, comment, rating, reviewer_id) VALUES ( $1 , $2 , $3 , $4 ) RETURNING id", review.MovieID, review.Comment, review.Rating, userID).Scan(&reviewID)
+	err := tx.QueryRow("INSERT INTO review (movie_id, comment, rating, reviewer_id) VALUES ( $1 , $2 , $3 , $4 ) RETURNING id", review.MovieID, review.Comment, review.Rating, userID).Scan(&reviewID)
 	if err != nil {
-		return constant.EMPTY_STRING, error_handling.DatabaseErrorShow(err)
+		return constant.EMPTY_STRING, error_handling.DatabaseErrorHandling(err)
 	}
 	return reviewID, nil
 }
 
-func DeleteMovieReview(db *sql.DB, userID string, reviewID string) (string, error) {
+func DeleteMovieReview(tx *sql.Tx, userID string, reviewID string) (string, error) {
 	var movieID string
-	err := db.QueryRow("DELETE FROM review WHERE id = $1 AND reviewer_id = $2 RETURNING id", reviewID, userID).Scan(&movieID)
+	err := tx.QueryRow("DELETE FROM review WHERE id = $1 AND reviewer_id = $2 RETURNING movie_id", reviewID, userID).Scan(&movieID)
 	if err != nil {
-		return constant.EMPTY_STRING, error_handling.DatabaseErrorShow(err)
+		if err == sql.ErrNoRows {
+			return constant.EMPTY_STRING, error_handling.MovieReviewDoesNotExist
+		}
+		return constant.EMPTY_STRING, error_handling.DatabaseErrorHandling(err)
 	}
 	return movieID, nil
 }
 
-func UpdateMovieReview(db *sql.DB, userID string, review request.UpdateMovieReview) (string, error) {
+func UpdateMovieReview(tx *sql.Tx, userID string, review request.UpdateMovieReview) (string, error) {
 	var movieID string
 	var update []string
 	var filterArgsList []interface{}
@@ -48,9 +51,20 @@ func UpdateMovieReview(db *sql.DB, userID string, review request.UpdateMovieRevi
 
 	query := fmt.Sprintf("UPDATE review SET %s WHERE id = ? AND reviewer_id = ? RETURNING movie_id", strings.Join(update, " , "))
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
-	err := db.QueryRow(query, filterArgsList...).Scan(&movieID)
+	err := tx.QueryRow(query, filterArgsList...).Scan(&movieID)
 	if err != nil {
-		return constant.EMPTY_STRING, error_handling.DatabaseErrorShow(err)
+		if err == sql.ErrNoRows {
+			return constant.EMPTY_STRING, error_handling.InvalidDetails
+		}
+		return constant.EMPTY_STRING, error_handling.DatabaseErrorHandling(err)
 	}
-	return movieID, nil
+	return constant.EMPTY_STRING, nil
+}
+
+func DeleteMovieReviews(tx *sql.Tx, movieID string) error {
+	_, err := tx.Exec("DELETE FROM review WHERE movie_id = $1", movieID)
+	if err != nil {
+		return error_handling.DatabaseErrorHandling(err)
+	}
+	return nil
 }

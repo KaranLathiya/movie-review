@@ -11,6 +11,7 @@ import (
 	"movie-review/api/repository"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/model"
 	"movie-review/utils"
 )
 
@@ -26,9 +27,21 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
+		} else if err == error_handling.UniqueKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.MovieReviewAlreadyExist
 		}
 		return constant.EMPTY_STRING, err
 	}
+	go func() {
+		movieReviewNotification := &model.MovieReviewNotification{
+			ID:         reviewID,
+			MovieID:    input.MovieID,
+			Comment:    input.Comment,
+			Rating:     input.Rating,
+			ReviewerID: userID,
+		}
+		MovieReviewNotificationChannel <- movieReviewNotification
+	}()
 	return reviewID, nil
 }
 
@@ -38,9 +51,6 @@ func (r *mutationResolver) DeleteMovieReview(ctx context.Context, reviewID strin
 	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
 	err := repo.DeleteMovieReview(userID, reviewID)
 	if err != nil {
-		if err == error_handling.NoRowsAffectedError {
-			return constant.EMPTY_STRING, error_handling.MovieReviewDoesNotExist
-		}
 		return constant.EMPTY_STRING, err
 	}
 	return constant.MOVIE_REVIEW_DELETED, nil
@@ -56,10 +66,25 @@ func (r *mutationResolver) UpdateMovieReview(ctx context.Context, input request.
 	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
 	err = repo.UpdateMovieReview(userID, input)
 	if err != nil {
-		if err == error_handling.NoRowsAffectedError {
-			return constant.EMPTY_STRING, error_handling.MovieReviewDoesNotExist
-		} 
 		return constant.EMPTY_STRING, err
 	}
 	return constant.MOVIE_REVIEW_UPDATED, nil
 }
+
+// MovieReviewNotification is the resolver for the movieReviewNotification field.
+func (r *subscriptionResolver) MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error) {
+	return MovieReviewNotificationChannel, nil
+}
+
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
+type subscriptionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+var MovieReviewNotificationChannel = make(chan *model.MovieReviewNotification, 1)

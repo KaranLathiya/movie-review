@@ -15,9 +15,28 @@ input UpdateMovieReview {
   rating: Int
 }
 
+type MovieReviewNotification{
+  movieID: ID!
+  comment: String!
+  rating: Int!
+  reviewerID: ID!
+  id: ID!
+}
+
+type Review{
+  movieID: ID
+  comment: String
+  rating: Int
+  reviewerID: ID
+  id: ID
+}
 
 extend type Mutation {
   CreateMovieReview(input: NewMovieReview!): ID! @isAuthenticated
   DeleteMovieReview(reviewID: ID!): String! @isAuthenticated
   UpdateMovieReview(input: UpdateMovieReview!): String! @isAuthenticated
+}
+
+type Subscription { 
+    movieReviewNotification(movieID: ID!): MovieReviewNotification! @isAuthenticated
 }

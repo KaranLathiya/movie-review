@@ -51,9 +51,6 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	}
 	accessToken, err := utils.CreateJWT(time.Now().UTC().Add(time.Minute*time.Duration(60)), userID)
 	if err != nil {
-		if err == error_handling.NoRowsError {
-			return nil, error_handling.UserDoesNotExist
-		}
 		return nil, err
 	}
 	return &model.Token{AccessToken: accessToken}, nil

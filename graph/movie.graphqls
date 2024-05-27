@@ -14,6 +14,17 @@ input UpdateMovie {
   description: String
 }
 
+type Movie {
+  id: ID!
+  title: String
+  description: String
+  directorID: ID
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  updatedBy:ID
+  reviews(limit: Int = 25, offset: Int = 0): [Review]
+  averageRating: Float
+}
 
 extend type Mutation {
   CreateMovie(input: NewMovie!): ID! @isAdmin @isAuthenticated
@@ -21,6 +32,11 @@ extend type Mutation {
   DeleteMovie(movieID: ID!): String! @isAdmin @isAuthenticated
 }
 
+type Query {
+  FetchMovies(movieName: String, limit: Int = 25, offset: Int = 0): [Movie!]! @isAuthenticated
+}
 
 directive @isAuthenticated on FIELD_DEFINITION
 directive @isAdmin on FIELD_DEFINITION
+
+scalar Timestamp

@@ -5,6 +5,7 @@ import (
 	"movie-review/api/dal"
 	"movie-review/api/model/request"
 	"movie-review/constant"
+	error_handling "movie-review/error"
 )
 
 type Repositories struct {
@@ -19,7 +20,7 @@ func InitRepositories(db *sql.DB) *Repositories {
 type Repository interface {
 	UserSignup(user request.UserSignup) error
 	UserLogin(user request.UserSignup) (string, error)
-	CreateMovie(userId string, movie request.NewMovie) (string, error)
+	CreateMovie(userID string, movie request.NewMovie) (string, error)
 	DeleteMovie(movieID string) error
 	UpdateMovie(userID string, movie request.UpdateMovie) error
 	CreateMovieReview(userID string, review request.NewMovieReview) (string, error)
@@ -44,35 +45,108 @@ func (r *Repositories) UpdateMovie(userID string, movie request.UpdateMovie) err
 }
 
 func (r *Repositories) DeleteMovie(movieID string) error {
-	return dal.DeleteMovie(r.db, movieID)
+	tx, err := r.db.Begin()
+	if err != nil {
+		return error_handling.InternalServerError
+	}
+	err = dal.DeleteMovieReviews(tx, movieID)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return error_handling.InternalServerError
+		}
+		return err
+	}
+	err = dal.DeleteMovie(tx, movieID)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return error_handling.InternalServerError
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return error_handling.InternalServerError
+	}
+	return nil
 }
 
 func (r *Repositories) CreateMovieReview(userID string, review request.NewMovieReview) (string, error) {
-	reviewID, err := dal.CreateMovieReview(r.db, userID, review)
+	tx, err := r.db.Begin()
 	if err != nil {
+		return constant.EMPTY_STRING, error_handling.InternalServerError
+	}
+	reviewID, err := dal.CreateMovieReview(tx, userID, review)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return constant.EMPTY_STRING, error_handling.InternalServerError
+		}
 		return constant.EMPTY_STRING, err
 	}
-	go dal.UpdateAverageRatingOfMovie(r.db, review.MovieID)
+	err = dal.UpdateAverageRatingOfMovie(tx, review.MovieID)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return constant.EMPTY_STRING, error_handling.InternalServerError
+		}
+		return constant.EMPTY_STRING, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return constant.EMPTY_STRING, error_handling.InternalServerError
+	}
 	return reviewID, nil
 }
 
-func (r *Repositories) UpdateMovieReview(userID string, movie request.UpdateMovieReview) error {
-	movieID, err := dal.UpdateMovieReview(r.db, userID, movie)
+func (r *Repositories) UpdateMovieReview(userID string, movieReview request.UpdateMovieReview) error {
+	tx, err := r.db.Begin()
 	if err != nil {
+		return error_handling.InternalServerError
+	}
+	movieID, err := dal.UpdateMovieReview(tx, userID, movieReview)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return error_handling.InternalServerError
+		}
 		return err
 	}
-	if movie.Rating != nil {
-		go dal.UpdateAverageRatingOfMovie(r.db, movieID)
+	if movieReview.Rating != nil {
+		err = dal.UpdateAverageRatingOfMovie(tx, movieID)
+		if err != nil {
+			if err := tx.Rollback(); err != nil {
+				return error_handling.InternalServerError
+			}
+			return err
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return error_handling.InternalServerError
 	}
 	return nil
 }
 
 func (r *Repositories) DeleteMovieReview(userID string, reviewID string) error {
-	movieID, err := dal.DeleteMovieReview(r.db, userID, reviewID)
+	tx, err := r.db.Begin()
 	if err != nil {
+		return error_handling.InternalServerError
+	}
+	movieID, err := dal.DeleteMovieReview(tx, userID, reviewID)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return error_handling.InternalServerError
+		}
 		return err
 	}
-	go dal.UpdateAverageRatingOfMovie(r.db, movieID)
+	err = dal.UpdateAverageRatingOfMovie(tx, movieID)
+	if err != nil {
+		if err := tx.Rollback(); err != nil {
+			return error_handling.InternalServerError
+		}
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return error_handling.InternalServerError
+	}
 	return nil
 }
 

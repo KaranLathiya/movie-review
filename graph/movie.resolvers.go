@@ -6,13 +6,20 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/model"
 	"movie-review/utils"
 )
+
+// Reviews is the resolver for the reviews field.
+func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.Review, error) {
+	panic(fmt.Errorf("not implemented: Reviews - reviews"))
+}
 
 // CreateMovie is the resolver for the CreateMovie field.
 func (r *mutationResolver) CreateMovie(ctx context.Context, input request.NewMovie) (string, error) {
@@ -26,6 +33,8 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input request.NewMov
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
+		} else if err == error_handling.UniqueKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.MovieTitleAlreadyExist
 		}
 		return constant.EMPTY_STRING, err
 	}
@@ -42,10 +51,10 @@ func (r *mutationResolver) UpdateMovie(ctx context.Context, input request.Update
 	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
 	err = repo.UpdateMovie(userID, input)
 	if err != nil {
-		if err == error_handling.NoRowsAffectedError {
-			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
-		} else if err == error_handling.ForeignKeyConstraintError {
+		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
+		} else if err == error_handling.UniqueKeyConstraintError {
+			return constant.EMPTY_STRING, error_handling.MovieTitleAlreadyExist
 		}
 		return constant.EMPTY_STRING, err
 	}
@@ -57,10 +66,31 @@ func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (str
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
 	err := repo.DeleteMovie(movieID)
 	if err != nil {
-		if err == error_handling.NoRowsAffectedError {
-			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
-		}
 		return constant.EMPTY_STRING, err
 	}
 	return constant.MOVIE_DELETED, nil
+}
+
+// FetchMovies is the resolver for the FetchMovies field.
+func (r *queryResolver) FetchMovies(ctx context.Context, movieName *string, limit *int, offset *int) ([]*model.Movie, error) {
+	panic(fmt.Errorf("not implemented: FetchMovies - FetchMovies"))
+}
+
+// Movie returns MovieResolver implementation.
+func (r *Resolver) Movie() MovieResolver { return &movieResolver{r} }
+
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
+type movieResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) MovieList(ctx context.Context, movieName *string, limit *int, offset *int) ([]*model.Movie, error) {
+	panic(fmt.Errorf("not implemented: MovieList - MovieList"))
 }

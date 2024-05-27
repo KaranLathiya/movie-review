@@ -15,22 +15,22 @@ func CreateMovie(db *sql.DB, userID string, movie request.NewMovie) (string, err
 	var movieID string
 	err := db.QueryRow("INSERT INTO movie (title, director_id, description) VALUES ( $1 , $2 , $3 ) RETURNING id", movie.Title, userID, movie.Description).Scan(&movieID)
 	if err != nil {
-		return constant.EMPTY_STRING, error_handling.DatabaseErrorShow(err)
+		return constant.EMPTY_STRING, error_handling.DatabaseErrorHandling(err)
 	}
 	return movieID, nil
 }
 
-func DeleteMovie(db *sql.DB, movieID string) error {
-	result, err := db.Exec("DELETE FROM movie WHERE id = $1", movieID)
+func DeleteMovie(tx *sql.Tx, movieID string) error {
+	result, err := tx.Exec("DELETE FROM movie WHERE id = $1", movieID)
 	if err != nil {
-		return error_handling.DatabaseErrorShow(err)
+		return error_handling.DatabaseErrorHandling(err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return error_handling.InternalServerError
 	}
 	if rowsAffected == 0 {
-		return error_handling.NoRowsAffectedError
+		return error_handling.MovieDoesNotExist
 	}
 	return nil
 }
@@ -56,20 +56,20 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
 	result, err := db.Exec(query, filterArgsList...)
 	if err != nil {
-		return error_handling.DatabaseErrorShow(err)
+		return error_handling.DatabaseErrorHandling(err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return error_handling.InternalServerError
 	}
 	if rowsAffected == 0 {
-		return error_handling.NoRowsAffectedError
+		return error_handling.MovieDoesNotExist
 	}
 	return nil
 }
 
-func UpdateAverageRatingOfMovie(db *sql.DB, movieID string) error {
-	_, err := db.Exec(`
+func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
+	result, err := tx.Exec(`
 	WITH avg_rating AS (
         SELECT
             AVG(rating) AS avg_rating
@@ -80,9 +80,16 @@ func UpdateAverageRatingOfMovie(db *sql.DB, movieID string) error {
     )
     UPDATE movie
     SET average_rating = (SELECT avg_rating FROM avg_rating)
-    WHERE id = $2;`, movieID, movieID)
+    WHERE id = $1;`, movieID)
 	if err != nil {
-		return error_handling.DatabaseErrorShow(err)
+		return error_handling.DatabaseErrorHandling(err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return error_handling.InternalServerError
+	}
+	if rowsAffected == 0 {
+		return error_handling.MovieDoesNotExist
 	}
 	return nil
 }
