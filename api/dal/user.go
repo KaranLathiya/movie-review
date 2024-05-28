@@ -44,3 +44,15 @@ func CheckRoleOfUser(db *sql.DB, userID string) (string, error) {
 	}
 	return role, nil
 }
+
+func IsReviewLimitExceeded(db *sql.DB, userID string) (bool, error) {
+	var numberOfReviews int
+	err := db.QueryRow("SELECT COUNT(*) FROM review WHERE reviewer_id = $1 AND created_at >= NOW() - INTERVAL '10 minutes';", userID).Scan(&numberOfReviews)
+	if err != nil {
+		return false, error_handling.DatabaseErrorHandling(err)
+	}
+	if numberOfReviews > 3 {
+		return true, nil
+	}
+	return false, nil
+}

@@ -28,11 +28,17 @@ type MovieReview struct {
 }
 
 type MovieReviewNotification struct {
-	MovieID    string `json:"movieID"`
-	Comment    string `json:"comment"`
-	Rating     int    `json:"rating"`
-	ReviewerID string `json:"reviewerID"`
-	ID         string `json:"id"`
+	ID              string       `json:"id"`
+	Title           *string      `json:"title,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	DirectorID      *string      `json:"directorID,omitempty"`
+	CreatedAt       *string      `json:"createdAt,omitempty"`
+	UpdatedAt       *string      `json:"updatedAt,omitempty"`
+	UpdatedByUserID *string      `json:"updatedByUserID,omitempty"`
+	Review          *MovieReview `json:"review,omitempty"`
+	AverageRating   *float64     `json:"averageRating,omitempty"`
+	Director        *string      `json:"director,omitempty"`
+	UpdatedBy       *string      `json:"updatedBy,omitempty"`
 }
 
 type Mutation struct {

@@ -77,6 +77,7 @@ var (
 	JWTTokenInvalidDetails  = CreateCustomError("Invalid jwt token details.", http.StatusBadRequest)
 	JWTTokenGenerateError   = CreateCustomError("Error at generating jwt token.", http.StatusInternalServerError)
 	AdminAccessRights       = CreateCustomError("Only admin have permission.", http.StatusForbidden)
+	ReviewLimitExceeded     = CreateCustomError("You have exceeded the maximum number of requests allowed. Please try again later.", http.StatusTooManyRequests)
 
 	NotNullConstraintError    = CreateCustomError("Required field cannot be empty or null. Please provide a value for the field.", http.StatusBadRequest)
 	ForeignKeyConstraintError = CreateCustomError("Data doesn't exist.", http.StatusConflict)

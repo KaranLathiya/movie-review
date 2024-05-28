@@ -174,3 +174,7 @@ func (r *Repositories) FetchMovieReviews(movieID string, limit int, offset int) 
 func (r *Repositories) FetchMovieReviewsUsingDataloader(movieIDs []string, limit int, offset int) ([][]*model.MovieReview, []error) {
 	return dal.FetchMovieReviewsUsingDataloader(r.db, movieIDs, limit, offset)
 }
+
+func (r *Repositories) IsReviewLimitExceeded(userID string) (bool, error) {
+	return dal.IsReviewLimitExceeded(r.db, userID)
+}

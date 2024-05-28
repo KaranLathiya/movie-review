@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"log"
 	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
@@ -23,6 +24,16 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 	}
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
 	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
+	isReviewLimitExceeded, err := repo.IsReviewLimitExceeded(userID)
+	if err != nil {
+		return constant.EMPTY_STRING, err
+	}
+	if isReviewLimitExceeded{
+		return constant.EMPTY_STRING, error_handling.ReviewLimitExceeded
+	}
+	if err != nil{
+		return constant.EMPTY_STRING, err
+	}
 	reviewID, err := repo.CreateMovieReview(userID, input)
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
@@ -33,12 +44,29 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 		return constant.EMPTY_STRING, err
 	}
 	go func() {
+		movie, err := repo.FetchMovieByID(input.MovieID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		movieReviewNotification := &model.MovieReviewNotification{
-			ID:         reviewID,
-			MovieID:    input.MovieID,
-			Comment:    input.Comment,
-			Rating:     input.Rating,
-			ReviewerID: userID,
+			ID:              input.MovieID,
+			Title:           movie.Title,
+			Description:     movie.Description,
+			DirectorID:      movie.DirectorID,
+			CreatedAt:       movie.CreatedAt,
+			UpdatedAt:       movie.UpdatedAt,
+			UpdatedByUserID: movie.UpdatedByUserID,
+			AverageRating:   movie.AverageRating,
+			Director:        movie.Director,
+			UpdatedBy:       movie.UpdatedBy,
+			Review: &model.MovieReview{
+				ID:         &reviewID,
+				MovieID:    &input.MovieID,
+				Comment:    &input.Comment,
+				Rating:     &input.Rating,
+				ReviewerID: &userID,
+			},
 		}
 		MovieReviewNotificationChannel <- movieReviewNotification
 	}()
@@ -72,7 +100,7 @@ func (r *mutationResolver) UpdateMovieReview(ctx context.Context, input request.
 }
 
 // MovieReviewNotification is the resolver for the movieReviewNotification field.
-func (r *subscriptionResolver) MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error) {
+func (r *subscriptionResolver) MovieReviewNotification(ctx context.Context) (<-chan *model.MovieReviewNotification, error) {
 	return MovieReviewNotificationChannel, nil
 }
 
