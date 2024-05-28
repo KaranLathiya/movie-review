@@ -10,3 +10,4 @@ type UpdateMovie struct {
 	Title       *string `json:"title" validate:"max_len:255|required_without:Description"`
 	Description *string `json:"description" validate:"max_len:1000"`
 }
+

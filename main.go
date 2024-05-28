@@ -8,6 +8,7 @@ import (
 	"movie-review/config"
 	"movie-review/db"
 	"movie-review/graph"
+	"movie-review/graph/dataloader"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -27,7 +28,8 @@ func main() {
 	router.Use(middleware.HandleCORS)
 	router.Use(middleware.Middleware)
 	router.Use(middleware.AddRepoToContext(repo))
-	
+	router.Use(dataloader.DataloaderMiddleware)
+
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.NewRootResolvers(repo)))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))

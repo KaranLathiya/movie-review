@@ -71,7 +71,7 @@ func DeleteMovieReviews(tx *sql.Tx, movieID string) error {
 }
 
 func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
-	query := "SELECT r.id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, CONCAT(u.first_name, ' ', u.last_name) AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ? "
+	query := "SELECT r.id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ? "
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
 	rows, err := db.Query(query, movieID, limit, offset)
 	if err != nil {
@@ -85,6 +85,45 @@ func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*mo
 			return nil, error_handling.InternalServerError
 		}
 		movieReviews = append(movieReviews, &movieReview)
+	}
+	if err = rows.Close(); err != nil {
+		return nil, error_handling.InternalServerError
+	}
+	return movieReviews, nil
+}
+
+func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string, limit int, offset int) ([][]*model.MovieReview, []error) {
+	sqlQuery := "SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id IN (?) ORDER BY r.created_at DESC LIMIT ? OFFSET ?"
+	sqlQuery, arguments, err := sqlx.In(sqlQuery, movieIDs, limit, offset)
+	if err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	sqlQuery = sqlx.Rebind(sqlx.DOLLAR, sqlQuery)
+	rows, err := db.Query(sqlQuery, arguments...)
+	if err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	movieReviewMap := map[string][]*model.MovieReview{}
+	for rows.Next() {
+		movieReview := model.MovieReview{}
+		if err = rows.Scan(&movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer); err != nil {
+			return nil, []error{error_handling.InternalServerError}
+		}
+		if _, ok := movieReviewMap[*movieReview.MovieID]; ok {
+			movieReviewMap[*movieReview.MovieID] = append(movieReviewMap[*movieReview.MovieID], &movieReview)
+		} else {
+			movieReviewArr := []*model.MovieReview{}
+			movieReviewArr = append(movieReviewArr, &movieReview)
+			movieReviewMap[*movieReview.MovieID] = movieReviewArr
+		}
+	}
+	if err = rows.Close(); err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	movieReviews := make([][]*model.MovieReview, len(movieIDs))
+	for i, id := range movieIDs {
+		movieReviews[i] = movieReviewMap[id]
+		i++
 	}
 	return movieReviews, nil
 }

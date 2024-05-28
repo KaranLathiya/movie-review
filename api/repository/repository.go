@@ -29,6 +29,8 @@ type Repository interface {
 	UpdateMovieReview(userID string, movie request.UpdateMovieReview) error
 	FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error)
 	FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error)
+	FetchMovieReviewsUsingDataloader(movieIDs []string, limit string, offset string) ([][]*model.MovieReview, []error)
+	FetchMovieByID(movieID string) (*model.Movie, error)
 }
 
 func (r *Repositories) UserSignup(user request.UserSignup) error {
@@ -161,6 +163,14 @@ func (r *Repositories) FetchMovies(movieName string, limit int, offset int) ([]*
 	return dal.FetchMovies(r.db, movieName, limit, offset)
 }
 
+func (r *Repositories) FetchMovieByID(movieID string) (*model.Movie, error) {
+	return dal.FetchMovieByID(r.db, movieID)
+}
+
 func (r *Repositories) FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error) {
 	return dal.FetchMovieReviews(r.db, movieID, limit, offset)
+}
+
+func (r *Repositories) FetchMovieReviewsUsingDataloader(movieIDs []string, limit int, offset int) ([][]*model.MovieReview, []error) {
+	return dal.FetchMovieReviewsUsingDataloader(r.db, movieIDs, limit, offset)
 }

@@ -70,7 +70,7 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 }
 
 func FetchMovies(db *sql.DB, movieName string, limit int, offset int) ([]*model.Movie, error) {
-	query := "SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, CONCAT(u1.first_name, ' ', u1.last_name) AS director_name, CONCAT(u2.first_name, ' ', u2.last_name) AS updater_name FROM movie m LEFT JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id WHERE m.title ILIKE '%' || ? || '%' ORDER BY created_at DESC LIMIT ? OFFSET ? "
+	query := "SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id WHERE m.title ILIKE '%' || ? || '%' ORDER BY m.created_at DESC LIMIT ? OFFSET ? "
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
 	rows, err := db.Query(query, movieName, limit, offset)
 	if err != nil {
@@ -79,13 +79,28 @@ func FetchMovies(db *sql.DB, movieName string, limit int, offset int) ([]*model.
 	var movies []*model.Movie
 	for rows.Next() {
 		var movie model.Movie
-		err = rows.Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.Director, &movie.UpdatedBy)
+		err = rows.Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.AverageRating, &movie.Director, &movie.UpdatedBy)
 		if err != nil {
 			return nil, error_handling.InternalServerError
 		}
 		movies = append(movies, &movie)
 	}
+	if err = rows.Close(); err != nil {
+		return nil, error_handling.InternalServerError
+	}
 	return movies, nil
+}
+
+func FetchMovieByID(db *sql.DB, movieID string) (*model.Movie, error) {
+	var movie model.Movie
+	err := db.QueryRow("SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id INNER JOIN users u2 ON m.updated_by = u2.id WHERE m.id = $1 ;", movieID).Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.AverageRating, &movie.Director, &movie.UpdatedBy)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, error_handling.MovieDoesNotExist
+		}
+		return nil, error_handling.DatabaseErrorHandling(err)
+	}
+	return &movie, nil
 }
 
 func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
@@ -113,5 +128,3 @@ func UpdateAverageRatingOfMovie(tx *sql.Tx, movieID string) error {
 	}
 	return nil
 }
-
-

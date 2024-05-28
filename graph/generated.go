@@ -60,7 +60,7 @@ type ComplexityRoot struct {
 		Director        func(childComplexity int) int
 		DirectorID      func(childComplexity int) int
 		ID              func(childComplexity int) int
-		Reviews         func(childComplexity int, limit *int, offset *int) int
+		Reviews         func(childComplexity int, limit int, offset int) int
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 		UpdatedBy       func(childComplexity int) int
@@ -98,7 +98,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		FetchMovies func(childComplexity int, movieName string, limit *int, offset *int) int
+		FetchMovieByID func(childComplexity int, movieID string) int
+		FetchMovies    func(childComplexity int, movieName string, limit int, offset int) int
 	}
 
 	Subscription struct {
@@ -111,7 +112,7 @@ type ComplexityRoot struct {
 }
 
 type MovieResolver interface {
-	Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.MovieReview, error)
+	Reviews(ctx context.Context, obj *model.Movie, limit int, offset int) ([]*model.MovieReview, error)
 }
 type MutationResolver interface {
 	UserSignup(ctx context.Context, input request.UserSignup) (string, error)
@@ -124,7 +125,8 @@ type MutationResolver interface {
 	UpdateMovieReview(ctx context.Context, input request.UpdateMovieReview) (string, error)
 }
 type QueryResolver interface {
-	FetchMovies(ctx context.Context, movieName string, limit *int, offset *int) ([]*model.Movie, error)
+	FetchMovies(ctx context.Context, movieName string, limit int, offset int) ([]*model.Movie, error)
+	FetchMovieByID(ctx context.Context, movieID string) (*model.Movie, error)
 }
 type SubscriptionResolver interface {
 	MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error)
@@ -201,7 +203,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Movie.Reviews(childComplexity, args["limit"].(*int), args["offset"].(*int)), true
+		return e.complexity.Movie.Reviews(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Movie.title":
 		if e.complexity.Movie.Title == nil {
@@ -418,6 +420,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UserSignup(childComplexity, args["input"].(request.UserSignup)), true
 
+	case "Query.FetchMovieByID":
+		if e.complexity.Query.FetchMovieByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_FetchMovieByID_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FetchMovieByID(childComplexity, args["movieID"].(string)), true
+
 	case "Query.FetchMovies":
 		if e.complexity.Query.FetchMovies == nil {
 			break
@@ -428,7 +442,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.FetchMovies(childComplexity, args["movieName"].(string), args["limit"].(*int), args["offset"].(*int)), true
+		return e.complexity.Query.FetchMovies(childComplexity, args["movieName"].(string), args["limit"].(int), args["offset"].(int)), true
 
 	case "Subscription.movieReviewNotification":
 		if e.complexity.Subscription.MovieReviewNotification == nil {
@@ -601,19 +615,19 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Movie_reviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
+	var arg0 int
 	if tmp, ok := rawArgs["limit"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["limit"] = arg0
-	var arg1 *int
+	var arg1 int
 	if tmp, ok := rawArgs["offset"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -742,6 +756,21 @@ func (ec *executionContext) field_Mutation_UserSignup_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_FetchMovieByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["movieID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movieID"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["movieID"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_FetchMovies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -754,19 +783,19 @@ func (ec *executionContext) field_Query_FetchMovies_args(ctx context.Context, ra
 		}
 	}
 	args["movieName"] = arg0
-	var arg1 *int
+	var arg1 int
 	if tmp, ok := rawArgs["limit"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["limit"] = arg1
-	var arg2 *int
+	var arg2 int
 	if tmp, ok := rawArgs["offset"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1147,7 +1176,7 @@ func (ec *executionContext) _Movie_reviews(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Movie().Reviews(rctx, obj, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+		return ec.resolvers.Movie().Reviews(rctx, obj, fc.Args["limit"].(int), fc.Args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2471,7 +2500,7 @@ func (ec *executionContext) _Query_FetchMovies(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().FetchMovies(rctx, fc.Args["movieName"].(string), fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+			return ec.resolvers.Query().FetchMovies(rctx, fc.Args["movieName"].(string), fc.Args["limit"].(int), fc.Args["offset"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.IsAuthenticated == nil {
@@ -2549,6 +2578,105 @@ func (ec *executionContext) fieldContext_Query_FetchMovies(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_FetchMovies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_FetchMovieByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_FetchMovieByID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().FetchMovieByID(rctx, fc.Args["movieID"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsAuthenticated == nil {
+				return nil, errors.New("directive isAuthenticated is not implemented")
+			}
+			return ec.directives.IsAuthenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Movie); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *movie-review/graph/model.Movie`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Movie)
+	fc.Result = res
+	return ec.marshalNMovie2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovie(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_FetchMovieByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Movie_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Movie_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Movie_description(ctx, field)
+			case "directorID":
+				return ec.fieldContext_Movie_directorID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Movie_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Movie_updatedAt(ctx, field)
+			case "updatedByUserID":
+				return ec.fieldContext_Movie_updatedByUserID(ctx, field)
+			case "reviews":
+				return ec.fieldContext_Movie_reviews(ctx, field)
+			case "averageRating":
+				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "director":
+				return ec.fieldContext_Movie_director(ctx, field)
+			case "updatedBy":
+				return ec.fieldContext_Movie_updatedBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_FetchMovieByID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5187,6 +5315,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "FetchMovieByID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_FetchMovieByID(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -5646,6 +5796,10 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNMovie2movieᚑreviewᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v model.Movie) graphql.Marshaler {
+	return ec._Movie(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNMovie2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Movie) graphql.Marshaler {

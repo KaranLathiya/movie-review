@@ -6,24 +6,26 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
 	"movie-review/constant"
 	error_handling "movie-review/error"
+	"movie-review/graph/dataloader"
 	"movie-review/graph/model"
 	"movie-review/utils"
 )
 
 // Reviews is the resolver for the reviews field.
-func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie, limit *int, offset *int) ([]*model.MovieReview, error) {
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	movieReviews, err := repo.FetchMovieReviews(obj.ID, *limit, *offset)
-	if err != nil {
-		return nil, err
-	}
-	return movieReviews, nil
+func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie, limit int, offset int) ([]*model.MovieReview, error) {
+	reviews, err := ctx.Value(dataloader.LoaderCtxKey).(*dataloader.Loaders).ReviewLoader.Load(obj.ID, limit, offset)
+	return reviews, err
+	// repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	// movieReviews, err := repo.FetchMovieReviews(obj.ID, *limit, *offset)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return movieReviews, nil
 }
 
 // CreateMovie is the resolver for the CreateMovie field.
@@ -77,13 +79,23 @@ func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (str
 }
 
 // FetchMovies is the resolver for the FetchMovies field.
-func (r *queryResolver) FetchMovies(ctx context.Context, movieName string, limit *int, offset *int) ([]*model.Movie, error) {
+func (r *queryResolver) FetchMovies(ctx context.Context, movieName string, limit int, offset int) ([]*model.Movie, error) {
 	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	movies, err := repo.FetchMovies(movieName, *limit, *offset)
+	movies, err := repo.FetchMovies(movieName, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	return movies, nil
+}
+
+// FetchMovieByID is the resolver for the FetchMovieByID field.
+func (r *queryResolver) FetchMovieByID(ctx context.Context, movieID string) (*model.Movie, error) {
+	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	movie, err := repo.FetchMovieByID(movieID)
+	if err != nil {
+		return nil, err
+	}
+	return movie, nil
 }
 
 // Movie returns MovieResolver implementation.
@@ -94,13 +106,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type movieResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) MovieList(ctx context.Context, movieName *string, limit *int, offset *int) ([]*model.Movie, error) {
-	panic(fmt.Errorf("not implemented: MovieList - MovieList"))
-}
