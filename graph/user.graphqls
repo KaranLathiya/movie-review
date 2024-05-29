@@ -11,6 +11,12 @@ input UserLogin {
   password: String!
 }
 
+type UserDetails{
+  email: String!
+  firstName: String!
+  lastName: String!
+}
+
 type Token {
   AccessToken: String!
 }
@@ -18,4 +24,8 @@ type Token {
 type Mutation {
   UserSignup(input: UserSignup!): String!
   UserLogin(input: UserLogin!): Token!
+}
+
+type Query {
+      FetchCurrentUserDetails: UserDetails! @isAuthenticated 
 }

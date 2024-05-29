@@ -28,9 +28,11 @@ type Repository interface {
 	DeleteMovieReview(reviewID string) error
 	UpdateMovieReview(userID string, movie request.UpdateMovieReview) error
 	FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error)
-	FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error)
+	FetchMovieReviewsByMovieID(movieID string, limit int, offset int) ([]*model.MovieReview, error)
 	FetchMovieReviewsUsingDataloader(movieIDs []string, limit string, offset string) ([][]*model.MovieReview, []error)
 	FetchMovieByID(movieID string) (*model.Movie, error)
+	SearchMovieReviewByComment(comment string, limit int, offset int) (*model.MovieReview, error)
+	FetchUserDetailsByID(userID string)  (*model.UserDetails, error)
 }
 
 func (r *Repositories) UserSignup(user request.UserSignup) error {
@@ -167,14 +169,22 @@ func (r *Repositories) FetchMovieByID(movieID string) (*model.Movie, error) {
 	return dal.FetchMovieByID(r.db, movieID)
 }
 
-func (r *Repositories) FetchMovieReviews(movieID string, limit int, offset int) ([]*model.MovieReview, error) {
-	return dal.FetchMovieReviews(r.db, movieID, limit, offset)
+func (r *Repositories) FetchMovieReviewsByMovieID(movieID string, limit int, offset int) ([]*model.MovieReview, error) {
+	return dal.FetchMovieReviewsByMovieID(r.db, movieID, limit, offset)
 }
 
-func (r *Repositories) FetchMovieReviewsUsingDataloader(movieIDs []string, limit int, offset int) ([][]*model.MovieReview, []error) {
-	return dal.FetchMovieReviewsUsingDataloader(r.db, movieIDs, limit, offset)
+func (r *Repositories) FetchMovieReviewsUsingDataloader(movieIDs []string) ([][]*model.MovieReview, []error) {
+	return dal.FetchMovieReviewsUsingDataloader(r.db, movieIDs)
 }
 
 func (r *Repositories) IsReviewLimitExceeded(userID string) (bool, error) {
 	return dal.IsReviewLimitExceeded(r.db, userID)
+}
+
+func (r *Repositories) SearchMovieReviewByComment(comment string, limit int, offset int) ([]*model.MovieReview, error) {
+	return dal.SearchMovieReviewByComment(r.db, comment, limit, offset)
+}
+
+func (r *Repositories) FetchUserDetailsByID(userID string)  (*model.UserDetails, error){
+	return dal.FetchUserDetailsByID(r.db, userID)
 }

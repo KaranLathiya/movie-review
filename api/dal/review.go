@@ -46,7 +46,7 @@ func UpdateMovieReview(tx *sql.Tx, userID string, review request.UpdateMovieRevi
 		update = append(update, "rating = ?")
 		filterArgsList = append(filterArgsList, review.Rating)
 	}
-	update = append(update, "updated_at = current_timestamp()")
+	update = append(update, "updated_at = CURRENT_TIMESTAMP()")
 	filterArgsList = append(filterArgsList, review.ID)
 	filterArgsList = append(filterArgsList, userID)
 
@@ -55,13 +55,14 @@ func UpdateMovieReview(tx *sql.Tx, userID string, review request.UpdateMovieRevi
 	err := tx.QueryRow(query, filterArgsList...).Scan(&movieID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return constant.EMPTY_STRING, error_handling.InvalidDetails
+			return constant.EMPTY_STRING, error_handling.MovieReviewDoesNotExist
 		}
 		return constant.EMPTY_STRING, error_handling.DatabaseErrorHandling(err)
 	}
-	return constant.EMPTY_STRING, nil
+	return movieID, nil
 }
 
+// for deleting all movie reviews of particular movie 
 func DeleteMovieReviews(tx *sql.Tx, movieID string) error {
 	_, err := tx.Exec("DELETE FROM review WHERE movie_id = $1", movieID)
 	if err != nil {
@@ -70,8 +71,8 @@ func DeleteMovieReviews(tx *sql.Tx, movieID string) error {
 	return nil
 }
 
-func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
-	query := "SELECT r.id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ? "
+func FetchMovieReviewsByMovieID(db *sql.DB, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
+	query := "SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ? "
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
 	rows, err := db.Query(query, movieID, limit, offset)
 	if err != nil {
@@ -80,7 +81,7 @@ func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*mo
 	var movieReviews []*model.MovieReview
 	for rows.Next() {
 		var movieReview model.MovieReview
-		err = rows.Scan(&movieReview.ID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
+		err = rows.Scan(&movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
 		if err != nil {
 			return nil, error_handling.InternalServerError
 		}
@@ -92,9 +93,9 @@ func FetchMovieReviews(db *sql.DB, movieID string, limit int, offset int) ([]*mo
 	return movieReviews, nil
 }
 
-func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string, limit int, offset int) ([][]*model.MovieReview, []error) {
-	sqlQuery := "SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r LEFT JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id IN (?) ORDER BY r.created_at DESC LIMIT ? OFFSET ?"
-	sqlQuery, arguments, err := sqlx.In(sqlQuery, movieIDs, limit, offset)
+func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string) ([][]*model.MovieReview, []error) {
+	sqlQuery := "SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id IN (?) ORDER BY r.created_at DESC"
+	sqlQuery, arguments, err := sqlx.In(sqlQuery, movieIDs)
 	if err != nil {
 		return nil, []error{error_handling.InternalServerError}
 	}
@@ -124,6 +125,27 @@ func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string, limit int, 
 	for i, id := range movieIDs {
 		movieReviews[i] = movieReviewMap[id]
 		i++
+	}
+	return movieReviews, nil
+}
+
+func SearchMovieReviewByComment(db *sql.DB, comment string, limit int, offset int) ([]*model.MovieReview, error) {
+	rows, err := db.Query("SELECT TS_RANK(comment_tsvector, PLAINTO_TSQUERY($1)) AS rank, r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE comment_tsvector @@ PLAINTO_TSQUERY($1) ORDER BY rank DESC LIMIT $2 OFFSET $3;", comment, limit, offset)
+	if err != nil {
+		return nil, error_handling.DatabaseErrorHandling(err)
+	}
+	var searchRank float64
+	var movieReviews []*model.MovieReview
+	for rows.Next() {
+		var movieReview model.MovieReview
+		err = rows.Scan(&searchRank, &movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
+		if err != nil {
+			return nil, error_handling.InternalServerError
+		}
+		movieReviews = append(movieReviews, &movieReview)
+	}
+	if err = rows.Close(); err != nil {
+		return nil, error_handling.InternalServerError
 	}
 	return movieReviews, nil
 }

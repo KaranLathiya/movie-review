@@ -3,46 +3,33 @@ package middleware
 import (
 	"context"
 	"movie-review/api/repository"
+	"movie-review/constant"
 	"net/http"
 )
 
-var RepoCtxKey = &repoContextKey{nil}
-
-type repoContextKey struct {
-	repos *repository.Repositories
-}
-
-var UserCtxKey = &userContextKey{"token"}
-
-type userContextKey struct {
-	token string
-}
-
-func AddRepoToContext(repos *repository.Repositories) (func(http.Handler) http.Handler) {
+func AddRepoToContext(repos *repository.Repositories) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var ctx = context.WithValue(r.Context(), RepoCtxKey, repos)
+			var ctx = context.WithValue(r.Context(), constant.RepoCtxKey, repos)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.Header.Get("Authorization")
-		
+		accessToken := r.Header.Get(constant.HEADER_KEY_AUTHORIZATION)
+
 		// Allow unauthenticated users in
 		if accessToken == "" {
-			ctx := context.WithValue(r.Context(), UserCtxKey, "")
+			ctx := context.WithValue(r.Context(), constant.AccessTokenCtxKey, "")
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserCtxKey, accessToken)
+		ctx := context.WithValue(r.Context(), constant.AccessTokenCtxKey, accessToken)
 
 		// and call the next with our new context
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}) 
+	})
 }
-

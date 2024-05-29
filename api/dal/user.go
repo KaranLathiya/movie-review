@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"movie-review/api/model/request"
 	"movie-review/constant"
+	"movie-review/graph/model"
 	"movie-review/utils"
 
 	error_handling "movie-review/error"
@@ -45,9 +46,21 @@ func CheckRoleOfUser(db *sql.DB, userID string) (string, error) {
 	return role, nil
 }
 
+func FetchUserDetailsByID(db *sql.DB, userID string) (*model.UserDetails, error) {
+	var userDetails model.UserDetails
+	err := db.QueryRow("SELECT email, first_name, last_name from users WHERE id = $1", userID).Scan(&userDetails.Email,&userDetails.FirstName,&userDetails.LastName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, error_handling.UserDoesNotExist
+		}
+		return nil, error_handling.DatabaseErrorHandling(err)
+	}
+	return &userDetails, nil
+}
+
 func IsReviewLimitExceeded(db *sql.DB, userID string) (bool, error) {
 	var numberOfReviews int
-	err := db.QueryRow("SELECT COUNT(*) FROM review WHERE reviewer_id = $1 AND created_at >= NOW() - INTERVAL '10 minutes';", userID).Scan(&numberOfReviews)
+	err := db.QueryRow("SELECT COUNT(*) FROM review WHERE reviewer_id = $1 AND created_at >= CURRENT_TIMESTAMP() - INTERVAL '10 minutes';", userID).Scan(&numberOfReviews)
 	if err != nil {
 		return false, error_handling.DatabaseErrorHandling(err)
 	}

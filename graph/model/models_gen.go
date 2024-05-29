@@ -53,3 +53,9 @@ type Subscription struct {
 type Token struct {
 	AccessToken string `json:"AccessToken"`
 }
+
+type UserDetails struct {
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}

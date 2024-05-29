@@ -50,7 +50,7 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	}
 	update = append(update, "updated_by = ?")
 	filterArgsList = append(filterArgsList, userID)
-	update = append(update, "updated_at = current_timestamp()")
+	update = append(update, "updated_at = CURRENT_TIMESTAMP()")
 	filterArgsList = append(filterArgsList, movie.ID)
 
 	query := fmt.Sprintf("UPDATE movie SET %s WHERE id = ?", strings.Join(update, " , "))
@@ -93,7 +93,7 @@ func FetchMovies(db *sql.DB, movieName string, limit int, offset int) ([]*model.
 
 func FetchMovieByID(db *sql.DB, movieID string) (*model.Movie, error) {
 	var movie model.Movie
-	err := db.QueryRow("SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id INNER JOIN users u2 ON m.updated_by = u2.id WHERE m.id = $1 ;", movieID).Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.AverageRating, &movie.Director, &movie.UpdatedBy)
+	err := db.QueryRow("SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id WHERE m.id = $1 ;", movieID).Scan(&movie.ID, &movie.Title, &movie.Description, &movie.DirectorID, &movie.CreatedAt, &movie.UpdatedAt, &movie.UpdatedByUserID, &movie.AverageRating, &movie.Director, &movie.UpdatedBy)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, error_handling.MovieDoesNotExist

@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
 	"movie-review/constant"
@@ -27,7 +26,7 @@ func (r *mutationResolver) UserSignup(ctx context.Context, input request.UserSig
 		return constant.EMPTY_STRING, err
 	}
 	input.Password = hashedPassword
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	err = repo.UserSignup(input)
 	if err != nil {
 		if err == error_handling.UniqueKeyConstraintError {
@@ -44,7 +43,7 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	if err != nil {
 		return nil, err
 	}
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	userID, err := repo.UserLogin(input)
 	if err != nil {
 		return nil, err
@@ -56,7 +55,22 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	return &model.Token{AccessToken: accessToken}, nil
 }
 
+// FetchCurrentUserDetails is the resolver for the FetchCurrentUserDetails field.
+func (r *queryResolver) FetchCurrentUserDetails(ctx context.Context) (*model.UserDetails, error) {
+	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userDetails, err := repo.FetchUserDetailsByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return userDetails, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
 type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }

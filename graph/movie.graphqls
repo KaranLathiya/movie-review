@@ -22,7 +22,7 @@ type Movie {
   createdAt: Timestamp
   updatedAt: Timestamp
   updatedByUserID:ID
-  reviews(limit: Int! = 25, offset: Int! = 0): [MovieReview]
+  reviews: [MovieReview]
   averageRating: Float
   director:String
   updatedBy:String
@@ -34,9 +34,9 @@ extend type Mutation {
   DeleteMovie(movieID: ID!): String! @isAdmin @isAuthenticated
 }
 
-type Query {
+extend type Query {
   FetchMovies(movieName: String!, limit: Int! = 25, offset: Int! = 0): [Movie!]! @isAuthenticated
-  FetchMovieByID(movieID: String!): Movie! @isAuthenticated
+  FetchMovie(movieID: String!): Movie! @isAuthenticated
 }
 
 directive @isAuthenticated on FIELD_DEFINITION

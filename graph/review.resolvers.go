@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"log"
-	"movie-review/api/middleware"
 	"movie-review/api/model/request"
 	"movie-review/api/repository"
 	"movie-review/constant"
@@ -22,16 +21,16 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
 	isReviewLimitExceeded, err := repo.IsReviewLimitExceeded(userID)
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	if isReviewLimitExceeded{
+	if isReviewLimitExceeded {
 		return constant.EMPTY_STRING, error_handling.ReviewLimitExceeded
 	}
-	if err != nil{
+	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
 	reviewID, err := repo.CreateMovieReview(userID, input)
@@ -75,8 +74,8 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 
 // DeleteMovieReview is the resolver for the DeleteMovieReview field.
 func (r *mutationResolver) DeleteMovieReview(ctx context.Context, reviewID string) (string, error) {
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
 	err := repo.DeleteMovieReview(userID, reviewID)
 	if err != nil {
 		return constant.EMPTY_STRING, err
@@ -90,13 +89,33 @@ func (r *mutationResolver) UpdateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(middleware.UserCtxKey).(string)
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
 	err = repo.UpdateMovieReview(userID, input)
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
 	return constant.MOVIE_REVIEW_UPDATED, nil
+}
+
+// SearchMovieReviewByComment is the resolver for the SearchMovieReviewByComment field.
+func (r *queryResolver) SearchMovieReviewByComment(ctx context.Context, comment string, limit int, offset int) ([]*model.MovieReview, error) {
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	movieReview, err := repo.SearchMovieReviewByComment(comment, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return movieReview, nil
+}
+
+// FetchMovieReviewsByMovieID is the resolver for the FetchMovieReviewsByMovieID field.
+func (r *queryResolver) FetchMovieReviewsByMovieID(ctx context.Context, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
+	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	movieReview, err := repo.FetchMovieReviewsByMovieID(movieID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return movieReview, nil
 }
 
 // MovieReviewNotification is the resolver for the movieReviewNotification field.

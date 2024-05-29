@@ -12,7 +12,7 @@ import (
 // ReviewLoaderConfig captures the config to create a new ReviewLoader
 type ReviewLoaderConfig struct {
 	// Fetch is a method that provides the data for the loader
-	Fetch func(keys []string, limit int, offset int) ([][]*model.MovieReview, []error)
+	Fetch func(keys []string) ([][]*model.MovieReview, []error)
 
 	// Wait is how long wait before sending a batch
 	Wait time.Duration
@@ -33,7 +33,7 @@ func NewReviewLoader(config ReviewLoaderConfig) *ReviewLoader {
 // ReviewLoader batches and caches requests
 type ReviewLoader struct {
 	// this method provides the data for the loader
-	fetch func(keys []string, limit int, offset int) ([][]*model.MovieReview, []error)
+	fetch func(keys []string) ([][]*model.MovieReview, []error)
 
 	// how long to done before sending a batch
 	wait time.Duration
@@ -60,18 +60,17 @@ type reviewLoaderBatch struct {
 	error   []error
 	closing bool
 	done    chan struct{}
-	
 }
 
 // Load a MovieReview by key, batching and caching will be applied automatically
-func (l *ReviewLoader) Load(key string, limit int, offset int) ([]*model.MovieReview, error) {
-	return l.LoadThunk(key,limit,offset)()
+func (l *ReviewLoader) Load(key string) ([]*model.MovieReview, error) {
+	return l.LoadThunk(key)()
 }
 
 // LoadThunk returns a function that when called will block waiting for a MovieReview.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *ReviewLoader) LoadThunk(key string, limit int, offset int) func() ([]*model.MovieReview, error) {
+func (l *ReviewLoader) LoadThunk(key string) func() ([]*model.MovieReview, error) {
 	l.mu.Lock()
 	if it, ok := l.cache[key]; ok {
 		l.mu.Unlock()
@@ -83,7 +82,7 @@ func (l *ReviewLoader) LoadThunk(key string, limit int, offset int) func() ([]*m
 		l.batch = &reviewLoaderBatch{done: make(chan struct{})}
 	}
 	batch := l.batch
-	pos := batch.keyIndex(l, key, limit, offset)
+	pos := batch.keyIndex(l, key)
 	l.mu.Unlock()
 
 	return func() ([]*model.MovieReview, error) {
@@ -114,11 +113,11 @@ func (l *ReviewLoader) LoadThunk(key string, limit int, offset int) func() ([]*m
 
 // LoadAll fetches many keys at once. It will be broken into appropriate sized
 // sub batches depending on how the loader is configured
-func (l *ReviewLoader) LoadAll(keys []string, limit int, offset int) ([][]*model.MovieReview, []error) {
+func (l *ReviewLoader) LoadAll(keys []string) ([][]*model.MovieReview, []error) {
 	results := make([]func() ([]*model.MovieReview, error), len(keys))
 
 	for i, key := range keys {
-		results[i] = l.LoadThunk(key,limit,offset)
+		results[i] = l.LoadThunk(key)
 	}
 
 	movieReviews := make([][]*model.MovieReview, len(keys))
@@ -132,10 +131,10 @@ func (l *ReviewLoader) LoadAll(keys []string, limit int, offset int) ([][]*model
 // LoadAllThunk returns a function that when called will block waiting for a MovieReviews.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *ReviewLoader) LoadAllThunk(keys []string, limit int, offset int) func() ([][]*model.MovieReview, []error) {
+func (l *ReviewLoader) LoadAllThunk(keys []string) func() ([][]*model.MovieReview, []error) {
 	results := make([]func() ([]*model.MovieReview, error), len(keys))
 	for i, key := range keys {
-		results[i] = l.LoadThunk(key,limit,offset)
+		results[i] = l.LoadThunk(key)
 	}
 	return func() ([][]*model.MovieReview, []error) {
 		movieReviews := make([][]*model.MovieReview, len(keys))
@@ -180,7 +179,7 @@ func (l *ReviewLoader) unsafeSet(key string, value []*model.MovieReview) {
 
 // keyIndex will return the location of the key in the batch, if its not found
 // it will add the key to the batch
-func (b *reviewLoaderBatch) keyIndex(l *ReviewLoader, key string, limit int, offset int) int {
+func (b *reviewLoaderBatch) keyIndex(l *ReviewLoader, key string) int {
 	for i, existingKey := range b.keys {
 		if key == existingKey {
 			return i
@@ -190,21 +189,21 @@ func (b *reviewLoaderBatch) keyIndex(l *ReviewLoader, key string, limit int, off
 	pos := len(b.keys)
 	b.keys = append(b.keys, key)
 	if pos == 0 {
-		go b.startTimer(l, limit, offset)
+		go b.startTimer(l)
 	}
 
 	if l.maxBatch != 0 && pos >= l.maxBatch-1 {
 		if !b.closing {
 			b.closing = true
 			l.batch = nil
-			go b.end(l,limit,offset)
+			go b.end(l)
 		}
 	}
 
 	return pos
 }
 
-func (b *reviewLoaderBatch) startTimer(l *ReviewLoader, limit int, offset int) {
+func (b *reviewLoaderBatch) startTimer(l *ReviewLoader) {
 	time.Sleep(l.wait)
 	l.mu.Lock()
 
@@ -217,10 +216,10 @@ func (b *reviewLoaderBatch) startTimer(l *ReviewLoader, limit int, offset int) {
 	l.batch = nil
 	l.mu.Unlock()
 
-	b.end(l,limit,offset)
+	b.end(l)
 }
 
-func (b *reviewLoaderBatch) end(l *ReviewLoader, limit int, offset int) {
-	b.data, b.error = l.fetch(b.keys,limit,offset)
+func (b *reviewLoaderBatch) end(l *ReviewLoader) {
+	b.data, b.error = l.fetch(b.keys)
 	close(b.done)
 }

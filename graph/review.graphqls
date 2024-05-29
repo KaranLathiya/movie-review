@@ -50,3 +50,8 @@ extend type Mutation {
 type Subscription { 
     movieReviewNotification: MovieReviewNotification! @isAuthenticated
 }
+
+extend type Query {
+  SearchMovieReviewByComment(comment: String!, limit: Int! = 25, offset: Int! = 0): [MovieReview!]! @isAuthenticated
+  FetchMovieReviewsByMovieID(movieID: String!, limit: Int! = 25, offset: Int! = 0): [MovieReview!]! @isAuthenticated
+}
