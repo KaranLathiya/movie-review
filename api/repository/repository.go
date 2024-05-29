@@ -27,7 +27,7 @@ type Repository interface {
 	CreateMovieReview(userID string, review request.NewMovieReview) (string, error)
 	DeleteMovieReview(reviewID string) error
 	UpdateMovieReview(userID string, movie request.UpdateMovieReview) error
-	FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error)
+	SearchMovies(filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int)
 	FetchMovieReviewsByMovieID(movieID string, limit int, offset int) ([]*model.MovieReview, error)
 	FetchMovieReviewsUsingDataloader(movieIDs []string, limit string, offset string) ([][]*model.MovieReview, []error)
 	FetchMovieByID(movieID string) (*model.Movie, error)
@@ -161,8 +161,8 @@ func (r *Repositories) CheckRoleOfUser(userID string) (string, error) {
 	return dal.CheckRoleOfUser(r.db, userID)
 }
 
-func (r *Repositories) FetchMovies(movieName string, limit int, offset int) ([]*model.Movie, error) {
-	return dal.FetchMovies(r.db, movieName, limit, offset)
+func (r *Repositories) SearchMovies(filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
+	return dal.SearchMovies(r.db, filter, sortBy, limit, offset)
 }
 
 func (r *Repositories) FetchMovieByID(movieID string) (*model.Movie, error) {

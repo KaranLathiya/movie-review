@@ -28,6 +28,20 @@ type Movie {
   updatedBy:String
 }
 
+input MovieSearchFilter {
+  title: String
+  director:String
+}
+
+enum MovieSearchSort {
+    NEWEST
+    OLDEST
+    TITLE_ASC
+    TITLE_DESC
+    AVERAGE_RATING_ASC
+    AVERAGE_RATING_DESC
+}
+
 extend type Mutation {
   CreateMovie(input: NewMovie!): ID! @isAdmin @isAuthenticated
   UpdateMovie(input: UpdateMovie!): String! @isAdmin @isAuthenticated
@@ -35,7 +49,7 @@ extend type Mutation {
 }
 
 extend type Query {
-  FetchMovies(movieName: String!, limit: Int! = 25, offset: Int! = 0): [Movie!]! @isAuthenticated
+  SearchMovies(filter: MovieSearchFilter,sortBy: MovieSearchSort = NEWEST, limit: Int! = 25, offset: Int! = 0): [Movie!]! @isAuthenticated
   FetchMovie(movieID: String!): Movie! @isAuthenticated
 }
 

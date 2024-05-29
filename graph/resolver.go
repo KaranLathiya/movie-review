@@ -59,6 +59,21 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 	return config
 }
 
+// func MarshalTimestamp(t time.Time) graphql.Marshaler {
+// 	timestamp := t.Unix() * 1000
+
+// 	return graphql.WriterFunc(func(w io.Writer) {
+// 		io.WriteString(w, strconv.FormatInt(timestamp, 10))
+// 	})
+// }
+
+// func UnmarshalTimestamp(v interface{}) (time.Time, error) {
+// 	if tmpStr, ok := v.(int); ok {
+// 		return time.Unix(int64(tmpStr), 0), nil
+// 	}
+// 	return time.Time{}, nil
+// }
+
 // func UserIDFromContext(ctx context.Context) (string) {
 // 	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
 // 	return userID
@@ -73,3 +88,4 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 // 	accessToken, _ := ctx.Value(constant.AccessTokenCtxKey).(string)
 // 	return accessToken
 // }
+

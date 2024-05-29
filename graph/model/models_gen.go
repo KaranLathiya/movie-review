@@ -2,6 +2,12 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type Movie struct {
 	ID              string         `json:"id"`
 	Title           *string        `json:"title,omitempty"`
@@ -41,6 +47,11 @@ type MovieReviewNotification struct {
 	UpdatedBy       *string      `json:"updatedBy,omitempty"`
 }
 
+type MovieSearchFilter struct {
+	Title    *string `json:"title,omitempty"`
+	Director *string `json:"director,omitempty"`
+}
+
 type Mutation struct {
 }
 
@@ -58,4 +69,53 @@ type UserDetails struct {
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+}
+
+type MovieSearchSort string
+
+const (
+	MovieSearchSortNewest            MovieSearchSort = "NEWEST"
+	MovieSearchSortOldest            MovieSearchSort = "OLDEST"
+	MovieSearchSortTitleAsc          MovieSearchSort = "TITLE_ASC"
+	MovieSearchSortTitleDesc         MovieSearchSort = "TITLE_DESC"
+	MovieSearchSortAverageRatingAsc  MovieSearchSort = "AVERAGE_RATING_ASC"
+	MovieSearchSortAverageRatingDesc MovieSearchSort = "AVERAGE_RATING_DESC"
+)
+
+var AllMovieSearchSort = []MovieSearchSort{
+	MovieSearchSortNewest,
+	MovieSearchSortOldest,
+	MovieSearchSortTitleAsc,
+	MovieSearchSortTitleDesc,
+	MovieSearchSortAverageRatingAsc,
+	MovieSearchSortAverageRatingDesc,
+}
+
+func (e MovieSearchSort) IsValid() bool {
+	switch e {
+	case MovieSearchSortNewest, MovieSearchSortOldest, MovieSearchSortTitleAsc, MovieSearchSortTitleDesc, MovieSearchSortAverageRatingAsc, MovieSearchSortAverageRatingDesc:
+		return true
+	}
+	return false
+}
+
+func (e MovieSearchSort) String() string {
+	return string(e)
+}
+
+func (e *MovieSearchSort) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MovieSearchSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MovieSearchSort", str)
+	}
+	return nil
+}
+
+func (e MovieSearchSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

@@ -130,15 +130,14 @@ func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string) ([][]*model
 }
 
 func SearchMovieReviewByComment(db *sql.DB, comment string, limit int, offset int) ([]*model.MovieReview, error) {
-	rows, err := db.Query("SELECT TS_RANK(comment_tsvector, PLAINTO_TSQUERY($1)) AS rank, r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE comment_tsvector @@ PLAINTO_TSQUERY($1) ORDER BY rank DESC LIMIT $2 OFFSET $3;", comment, limit, offset)
+	rows, err := db.Query("SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE comment_tsvector @@ PLAINTO_TSQUERY($1) ORDER BY TS_RANK(comment_tsvector, PLAINTO_TSQUERY($1)) DESC LIMIT $2 OFFSET $3;", comment, limit, offset)
 	if err != nil {
 		return nil, error_handling.DatabaseErrorHandling(err)
 	}
-	var searchRank float64
 	var movieReviews []*model.MovieReview
 	for rows.Next() {
 		var movieReview model.MovieReview
-		err = rows.Scan(&searchRank, &movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
+		err = rows.Scan(&movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer)
 		if err != nil {
 			return nil, error_handling.InternalServerError
 		}

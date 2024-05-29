@@ -69,10 +69,46 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	return nil
 }
 
-func FetchMovies(db *sql.DB, movieName string, limit int, offset int) ([]*model.Movie, error) {
-	query := "SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id WHERE m.title ILIKE '%' || ? || '%' ORDER BY m.created_at DESC LIMIT ? OFFSET ? "
+func SearchMovies(db *sql.DB, filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
+	var args []interface{}
+	var where, orderBy []string
+	var whereKeyword string
+	if filter != nil {
+		if filter.Director != nil {
+			args = append(args, filter.Director)
+			where = append(where, " u1.full_name ILIKE '%' || ? || '%' ")
+		}
+		if filter.Title != nil {
+			args = append(args, filter.Title, filter.Title)
+			where = append(where, " title_tsvector @@ PLAINTO_TSQUERY(?) ")
+			orderBy = append(orderBy, " TS_RANK(title_tsvector, PLAINTO_TSQUERY(?)) ")
+		}
+	}
+
+	switch sortBy.String() {
+	case model.MovieSearchSortNewest.String():
+		orderBy = append(orderBy, " created_at DESC ")
+	case model.MovieSearchSortOldest.String():
+		orderBy = append(orderBy, " created_at ASC ")
+	case model.MovieSearchSortTitleDesc.String():
+		orderBy = append(orderBy, " LOWER(title) DESC ")
+	case model.MovieSearchSortTitleAsc.String():
+		orderBy = append(orderBy, " LOWER(titlr) ASC ")
+	case model.MovieSearchSortAverageRatingAsc.String():
+		orderBy = append(orderBy, " average_rating ASC ")
+	case model.MovieSearchSortAverageRatingDesc.String():
+		orderBy = append(orderBy, " average_rating DESC ")
+	}
+
+	if len(where) > 0 {
+		whereKeyword = " WHERE "
+	}
+
+	args = append(args, limit, offset)
+
+	query := fmt.Sprintf("SELECT m.id, m.title, m.description, m.director_id, m.created_at, m.updated_at, m.updated_by, m.average_rating, u1.full_name AS director_name, u2.full_name AS updater_name FROM movie m INNER JOIN users u1 ON m.director_id = u1.id LEFT JOIN users u2 ON m.updated_by = u2.id %v %s ORDER BY %s LIMIT ? OFFSET ? ", whereKeyword, strings.Join(where, " AND "), strings.Join(orderBy, " , "))
 	query = sqlx.Rebind(sqlx.DOLLAR, query)
-	rows, err := db.Query(query, movieName, limit, offset)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, error_handling.DatabaseErrorHandling(err)
 	}
