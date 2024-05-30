@@ -69,17 +69,18 @@ func UpdateMovie(db *sql.DB, userID string, movie request.UpdateMovie) error {
 	return nil
 }
 
-func SearchMovies(db *sql.DB, filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
+func SearchMovies(db *sql.DB, filter *model.MovieSearchFilter, sortBy model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
 	var args []interface{}
 	var where, orderBy []string
 	var whereKeyword string
 	if filter != nil {
 		if filter.Director != nil {
-			args = append(args, filter.Director)
+			args = append(args, *filter.Director)
 			where = append(where, " u1.full_name ILIKE '%' || ? || '%' ")
 		}
 		if filter.Title != nil {
-			args = append(args, filter.Title, filter.Title)
+			args = append(args, *filter.Title, *filter.Title)
+			//fulltext based search condition only
 			where = append(where, " title_tsvector @@ PLAINTO_TSQUERY(?) ")
 			orderBy = append(orderBy, " TS_RANK(title_tsvector, PLAINTO_TSQUERY(?)) ")
 		}
@@ -93,7 +94,7 @@ func SearchMovies(db *sql.DB, filter *model.MovieSearchFilter, sortBy *model.Mov
 	case model.MovieSearchSortTitleDesc.String():
 		orderBy = append(orderBy, " LOWER(title) DESC ")
 	case model.MovieSearchSortTitleAsc.String():
-		orderBy = append(orderBy, " LOWER(titlr) ASC ")
+		orderBy = append(orderBy, " LOWER(title) ASC ")
 	case model.MovieSearchSortAverageRatingAsc.String():
 		orderBy = append(orderBy, " average_rating ASC ")
 	case model.MovieSearchSortAverageRatingDesc.String():

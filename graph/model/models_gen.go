@@ -47,6 +47,11 @@ type MovieReviewNotification struct {
 	UpdatedBy       *string      `json:"updatedBy,omitempty"`
 }
 
+type MovieReviewSearchFilter struct {
+	Comment  *string `json:"comment,omitempty"`
+	Reviewer *string `json:"reviewer,omitempty"`
+}
+
 type MovieSearchFilter struct {
 	Title    *string `json:"title,omitempty"`
 	Director *string `json:"director,omitempty"`
@@ -69,6 +74,51 @@ type UserDetails struct {
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+}
+
+type MovieReviewSearchSort string
+
+const (
+	MovieReviewSearchSortNewest     MovieReviewSearchSort = "NEWEST"
+	MovieReviewSearchSortOldest     MovieReviewSearchSort = "OLDEST"
+	MovieReviewSearchSortRatingAsc  MovieReviewSearchSort = "RATING_ASC"
+	MovieReviewSearchSortRatingDesc MovieReviewSearchSort = "RATING_DESC"
+)
+
+var AllMovieReviewSearchSort = []MovieReviewSearchSort{
+	MovieReviewSearchSortNewest,
+	MovieReviewSearchSortOldest,
+	MovieReviewSearchSortRatingAsc,
+	MovieReviewSearchSortRatingDesc,
+}
+
+func (e MovieReviewSearchSort) IsValid() bool {
+	switch e {
+	case MovieReviewSearchSortNewest, MovieReviewSearchSortOldest, MovieReviewSearchSortRatingAsc, MovieReviewSearchSortRatingDesc:
+		return true
+	}
+	return false
+}
+
+func (e MovieReviewSearchSort) String() string {
+	return string(e)
+}
+
+func (e *MovieReviewSearchSort) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MovieReviewSearchSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MovieReviewSearchSort", str)
+	}
+	return nil
+}
+
+func (e MovieReviewSearchSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 type MovieSearchSort string

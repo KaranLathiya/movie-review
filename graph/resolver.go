@@ -26,7 +26,8 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 		Resolvers: &Resolver{},
 	}
 
-	// Schema Directive
+	//to verify the user 
+	//check the accesstoken is valid or not if valid then parse userID otherwies throw error 
 	config.Directives.IsAuthenticated = func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
 		accessToken := ctx.Value(constant.AccessTokenCtxKey).(string)
 		if accessToken != "" {
@@ -42,9 +43,11 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 		}
 	}
 
+	//check user is admin or not 
+	//for admin authorized actions allow only if admin otherwise throw error 
 	config.Directives.IsAdmin = func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
 		userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
-		roleOfUser, err := repo.CheckRoleOfUser(userID)
+		roleOfUser, err := repo.FetchRoleOfUser(userID)
 		if err != nil {
 			if err == error_handling.NoRowsError {
 				return nil, error_handling.UserDoesNotExist

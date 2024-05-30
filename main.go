@@ -26,7 +26,7 @@ func main() {
 	repo := repository.InitRepositories(db)
 	router := chi.NewRouter()
 	router.Use(middleware.HandleCORS)
-	router.Use(middleware.Middleware)
+	router.Use(middleware.AddAccessTokenToContext)
 	router.Use(middleware.AddRepoToContext(repo))
 	router.Use(dataloader.DataloaderMiddleware)
 

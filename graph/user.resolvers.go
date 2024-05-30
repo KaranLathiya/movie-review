@@ -26,7 +26,7 @@ func (r *mutationResolver) UserSignup(ctx context.Context, input request.UserSig
 		return constant.EMPTY_STRING, err
 	}
 	input.Password = hashedPassword
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	err = repo.UserSignup(input)
 	if err != nil {
 		if err == error_handling.UniqueKeyConstraintError {
@@ -43,7 +43,7 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 	if err != nil {
 		return nil, err
 	}
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	userID, err := repo.UserLogin(input)
 	if err != nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (r *mutationResolver) UserLogin(ctx context.Context, input request.UserLogi
 
 // FetchCurrentUserDetails is the resolver for the FetchCurrentUserDetails field.
 func (r *queryResolver) FetchCurrentUserDetails(ctx context.Context) (*model.UserDetails, error) {
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	userDetails, err := repo.FetchUserDetailsByID(userID)
 	if err != nil {
 		return nil, err

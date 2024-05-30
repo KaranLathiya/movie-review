@@ -107,8 +107,8 @@ type ComplexityRoot struct {
 		FetchCurrentUserDetails    func(childComplexity int) int
 		FetchMovie                 func(childComplexity int, movieID string) int
 		FetchMovieReviewsByMovieID func(childComplexity int, movieID string, limit int, offset int) int
-		SearchMovieReviewByComment func(childComplexity int, comment string, limit int, offset int) int
-		SearchMovies               func(childComplexity int, filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) int
+		SearchMovieReviews         func(childComplexity int, filter *model.MovieReviewSearchFilter, sortBy model.MovieReviewSearchSort, limit int, offset int) int
+		SearchMovies               func(childComplexity int, filter *model.MovieSearchFilter, sortBy model.MovieSearchSort, limit int, offset int) int
 	}
 
 	Subscription struct {
@@ -141,9 +141,9 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	FetchCurrentUserDetails(ctx context.Context) (*model.UserDetails, error)
-	SearchMovies(ctx context.Context, filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error)
+	SearchMovies(ctx context.Context, filter *model.MovieSearchFilter, sortBy model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error)
 	FetchMovie(ctx context.Context, movieID string) (*model.Movie, error)
-	SearchMovieReviewByComment(ctx context.Context, comment string, limit int, offset int) ([]*model.MovieReview, error)
+	SearchMovieReviews(ctx context.Context, filter *model.MovieReviewSearchFilter, sortBy model.MovieReviewSearchSort, limit int, offset int) ([]*model.MovieReview, error)
 	FetchMovieReviewsByMovieID(ctx context.Context, movieID string, limit int, offset int) ([]*model.MovieReview, error)
 }
 type SubscriptionResolver interface {
@@ -506,17 +506,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.FetchMovieReviewsByMovieID(childComplexity, args["movieID"].(string), args["limit"].(int), args["offset"].(int)), true
 
-	case "Query.SearchMovieReviewByComment":
-		if e.complexity.Query.SearchMovieReviewByComment == nil {
+	case "Query.SearchMovieReviews":
+		if e.complexity.Query.SearchMovieReviews == nil {
 			break
 		}
 
-		args, err := ec.field_Query_SearchMovieReviewByComment_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_SearchMovieReviews_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchMovieReviewByComment(childComplexity, args["comment"].(string), args["limit"].(int), args["offset"].(int)), true
+		return e.complexity.Query.SearchMovieReviews(childComplexity, args["filter"].(*model.MovieReviewSearchFilter), args["sortBy"].(model.MovieReviewSearchSort), args["limit"].(int), args["offset"].(int)), true
 
 	case "Query.SearchMovies":
 		if e.complexity.Query.SearchMovies == nil {
@@ -528,7 +528,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchMovies(childComplexity, args["filter"].(*model.MovieSearchFilter), args["sortBy"].(*model.MovieSearchSort), args["limit"].(int), args["offset"].(int)), true
+		return e.complexity.Query.SearchMovies(childComplexity, args["filter"].(*model.MovieSearchFilter), args["sortBy"].(model.MovieSearchSort), args["limit"].(int), args["offset"].(int)), true
 
 	case "Subscription.movieReviewNotification":
 		if e.complexity.Subscription.MovieReviewNotification == nil {
@@ -573,6 +573,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputMovieReviewSearchFilter,
 		ec.unmarshalInputMovieSearchFilter,
 		ec.unmarshalInputNewMovie,
 		ec.unmarshalInputNewMovieReview,
@@ -883,36 +884,45 @@ func (ec *executionContext) field_Query_FetchMovie_args(ctx context.Context, raw
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_SearchMovieReviewByComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_SearchMovieReviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["comment"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 *model.MovieReviewSearchFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalOMovieReviewSearchFilter2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReviewSearchFilter(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["comment"] = arg0
-	var arg1 int
+	args["filter"] = arg0
+	var arg1 model.MovieReviewSearchSort
+	if tmp, ok := rawArgs["sortBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+		arg1, err = ec.unmarshalNMovieReviewSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieReviewSearchSort(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sortBy"] = arg1
+	var arg2 int
 	if tmp, ok := rawArgs["limit"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["limit"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["offset"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
 		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["offset"] = arg2
+	args["limit"] = arg2
+	var arg3 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg3
 	return args, nil
 }
 
@@ -928,10 +938,10 @@ func (ec *executionContext) field_Query_SearchMovies_args(ctx context.Context, r
 		}
 	}
 	args["filter"] = arg0
-	var arg1 *model.MovieSearchSort
+	var arg1 model.MovieSearchSort
 	if tmp, ok := rawArgs["sortBy"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
-		arg1, err = ec.unmarshalOMovieSearchSort2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx, tmp)
+		arg1, err = ec.unmarshalNMovieSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2952,7 +2962,7 @@ func (ec *executionContext) _Query_SearchMovies(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().SearchMovies(rctx, fc.Args["filter"].(*model.MovieSearchFilter), fc.Args["sortBy"].(*model.MovieSearchSort), fc.Args["limit"].(int), fc.Args["offset"].(int))
+			return ec.resolvers.Query().SearchMovies(rctx, fc.Args["filter"].(*model.MovieSearchFilter), fc.Args["sortBy"].(model.MovieSearchSort), fc.Args["limit"].(int), fc.Args["offset"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.IsAuthenticated == nil {
@@ -3135,8 +3145,8 @@ func (ec *executionContext) fieldContext_Query_FetchMovie(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_SearchMovieReviewByComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_SearchMovieReviewByComment(ctx, field)
+func (ec *executionContext) _Query_SearchMovieReviews(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_SearchMovieReviews(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3150,7 +3160,7 @@ func (ec *executionContext) _Query_SearchMovieReviewByComment(ctx context.Contex
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().SearchMovieReviewByComment(rctx, fc.Args["comment"].(string), fc.Args["limit"].(int), fc.Args["offset"].(int))
+			return ec.resolvers.Query().SearchMovieReviews(rctx, fc.Args["filter"].(*model.MovieReviewSearchFilter), fc.Args["sortBy"].(model.MovieReviewSearchSort), fc.Args["limit"].(int), fc.Args["offset"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.IsAuthenticated == nil {
@@ -3186,7 +3196,7 @@ func (ec *executionContext) _Query_SearchMovieReviewByComment(ctx context.Contex
 	return ec.marshalNMovieReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReviewᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_SearchMovieReviewByComment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SearchMovieReviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -3221,7 +3231,7 @@ func (ec *executionContext) fieldContext_Query_SearchMovieReviewByComment(ctx co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_SearchMovieReviewByComment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SearchMovieReviews_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5501,6 +5511,40 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputMovieReviewSearchFilter(ctx context.Context, obj interface{}) (model.MovieReviewSearchFilter, error) {
+	var it model.MovieReviewSearchFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"comment", "reviewer"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "comment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Comment = data
+		case "reviewer":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewer"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reviewer = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMovieSearchFilter(ctx context.Context, obj interface{}) (model.MovieSearchFilter, error) {
 	var it model.MovieSearchFilter
 	asMap := map[string]interface{}{}
@@ -6164,7 +6208,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "SearchMovieReviewByComment":
+		case "SearchMovieReviews":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -6173,7 +6217,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_SearchMovieReviewByComment(ctx, field)
+				res = ec._Query_SearchMovieReviews(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6844,6 +6888,26 @@ func (ec *executionContext) marshalNMovieReviewNotification2ᚖmovieᚑreviewᚋ
 	return ec._MovieReviewNotification(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNMovieReviewSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieReviewSearchSort(ctx context.Context, v interface{}) (model.MovieReviewSearchSort, error) {
+	var res model.MovieReviewSearchSort
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMovieReviewSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieReviewSearchSort(ctx context.Context, sel ast.SelectionSet, v model.MovieReviewSearchSort) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNMovieSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx context.Context, v interface{}) (model.MovieSearchSort, error) {
+	var res model.MovieSearchSort
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMovieSearchSort2movieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx context.Context, sel ast.SelectionSet, v model.MovieSearchSort) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNNewMovie2movieᚑreviewᚋapiᚋmodelᚋrequestᚐNewMovie(ctx context.Context, v interface{}) (request.NewMovie, error) {
 	res, err := ec.unmarshalInputNewMovie(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7292,28 +7356,20 @@ func (ec *executionContext) marshalOMovieReview2ᚖmovieᚑreviewᚋgraphᚋmode
 	return ec._MovieReview(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOMovieReviewSearchFilter2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReviewSearchFilter(ctx context.Context, v interface{}) (*model.MovieReviewSearchFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMovieReviewSearchFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOMovieSearchFilter2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieSearchFilter(ctx context.Context, v interface{}) (*model.MovieSearchFilter, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputMovieSearchFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOMovieSearchSort2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx context.Context, v interface{}) (*model.MovieSearchSort, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.MovieSearchSort)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOMovieSearchSort2ᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieSearchSort(ctx context.Context, sel ast.SelectionSet, v *model.MovieSearchSort) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

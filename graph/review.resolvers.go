@@ -21,8 +21,10 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
+
+	//for creating new movie review first check the limit of reviews not exceeded by the user
 	isReviewLimitExceeded, err := repo.IsReviewLimitExceeded(userID)
 	if err != nil {
 		return constant.EMPTY_STRING, err
@@ -42,40 +44,17 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 		}
 		return constant.EMPTY_STRING, err
 	}
+	//update realtime at new movie reviews add
 	go func() {
-		movie, err := repo.FetchMovieByID(input.MovieID)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		movieReviewNotification := &model.MovieReviewNotification{
-			ID:              input.MovieID,
-			Title:           movie.Title,
-			Description:     movie.Description,
-			DirectorID:      movie.DirectorID,
-			CreatedAt:       movie.CreatedAt,
-			UpdatedAt:       movie.UpdatedAt,
-			UpdatedByUserID: movie.UpdatedByUserID,
-			AverageRating:   movie.AverageRating,
-			Director:        movie.Director,
-			UpdatedBy:       movie.UpdatedBy,
-			Review: &model.MovieReview{
-				ID:         &reviewID,
-				MovieID:    &input.MovieID,
-				Comment:    &input.Comment,
-				Rating:     &input.Rating,
-				ReviewerID: &userID,
-			},
-		}
-		MovieReviewNotificationChannel <- movieReviewNotification
+		movieReviewNotification(repo, input, reviewID, userID)
 	}()
 	return reviewID, nil
 }
 
 // DeleteMovieReview is the resolver for the DeleteMovieReview field.
 func (r *mutationResolver) DeleteMovieReview(ctx context.Context, reviewID string) (string, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
 	err := repo.DeleteMovieReview(userID, reviewID)
 	if err != nil {
 		return constant.EMPTY_STRING, err
@@ -89,8 +68,8 @@ func (r *mutationResolver) UpdateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
 	err = repo.UpdateMovieReview(userID, input)
 	if err != nil {
 		return constant.EMPTY_STRING, err
@@ -98,10 +77,10 @@ func (r *mutationResolver) UpdateMovieReview(ctx context.Context, input request.
 	return constant.MOVIE_REVIEW_UPDATED, nil
 }
 
-// SearchMovieReviewByComment is the resolver for the SearchMovieReviewByComment field.
-func (r *queryResolver) SearchMovieReviewByComment(ctx context.Context, comment string, limit int, offset int) ([]*model.MovieReview, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	movieReview, err := repo.SearchMovieReviewByComment(comment, limit, offset)
+// SearchMovieReviews is the resolver for the SearchMovieReviews field.
+func (r *queryResolver) SearchMovieReviews(ctx context.Context, filter *model.MovieReviewSearchFilter, sortBy model.MovieReviewSearchSort, limit int, offset int) ([]*model.MovieReview, error) {
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	movieReview, err := repo.SearchMovieReviews(filter, sortBy, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +89,7 @@ func (r *queryResolver) SearchMovieReviewByComment(ctx context.Context, comment 
 
 // FetchMovieReviewsByMovieID is the resolver for the FetchMovieReviewsByMovieID field.
 func (r *queryResolver) FetchMovieReviewsByMovieID(ctx context.Context, movieID string, limit int, offset int) ([]*model.MovieReview, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	movieReview, err := repo.FetchMovieReviewsByMovieID(movieID, limit, offset)
 	if err != nil {
 		return nil, err
@@ -134,4 +113,36 @@ type subscriptionResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func movieReviewNotification(repo *repository.Repositories, input request.NewMovieReview, reviewID string, userID string) {
+	movie, err := repo.FetchMovieByID(input.MovieID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	movieReviewNotification := movieReviewNotificationModelCreate(input, movie, reviewID, userID)
+	MovieReviewNotificationChannel <- movieReviewNotification
+}
+func movieReviewNotificationModelCreate(input request.NewMovieReview, movie *model.Movie, reviewID string, userID string) *model.MovieReviewNotification {
+	movieReviewNotification := &model.MovieReviewNotification{
+		ID:              input.MovieID,
+		Title:           movie.Title,
+		Description:     movie.Description,
+		DirectorID:      movie.DirectorID,
+		CreatedAt:       movie.CreatedAt,
+		UpdatedAt:       movie.UpdatedAt,
+		UpdatedByUserID: movie.UpdatedByUserID,
+		AverageRating:   movie.AverageRating,
+		Director:        movie.Director,
+		UpdatedBy:       movie.UpdatedBy,
+		Review: &model.MovieReview{
+			ID:         &reviewID,
+			MovieID:    &input.MovieID,
+			Comment:    &input.Comment,
+			Rating:     &input.Rating,
+			ReviewerID: &userID,
+		},
+	}
+	return movieReviewNotification
+}
+
 var MovieReviewNotificationChannel = make(chan *model.MovieReviewNotification)

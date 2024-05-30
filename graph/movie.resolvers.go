@@ -19,12 +19,6 @@ import (
 func (r *movieResolver) Reviews(ctx context.Context, obj *model.Movie) ([]*model.MovieReview, error) {
 	reviews, err := ctx.Value(constant.LoaderCtxKey).(*dataloader.Loaders).ReviewLoader.Load(obj.ID)
 	return reviews, err
-	// repo, _ := ctx.Value(middleware.RepoCtxKey).(*repository.Repositories)
-	// movieReviews, err := repo.FetchMovieReviews(obj.ID, *limit, *offset)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return movieReviews, nil
 }
 
 // CreateMovie is the resolver for the CreateMovie field.
@@ -33,8 +27,8 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input request.NewMov
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
 	movieID, err := repo.CreateMovie(userID, input)
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
@@ -53,8 +47,8 @@ func (r *mutationResolver) UpdateMovie(ctx context.Context, input request.Update
 	if err != nil {
 		return constant.EMPTY_STRING, err
 	}
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	userID := ctx.Value(constant.UserIDCtxKey).(string)
 	err = repo.UpdateMovie(userID, input)
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
@@ -69,7 +63,7 @@ func (r *mutationResolver) UpdateMovie(ctx context.Context, input request.Update
 
 // DeleteMovie is the resolver for the DeleteMovie field.
 func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (string, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	err := repo.DeleteMovie(movieID)
 	if err != nil {
 		return constant.EMPTY_STRING, err
@@ -78,9 +72,9 @@ func (r *mutationResolver) DeleteMovie(ctx context.Context, movieID string) (str
 }
 
 // SearchMovies is the resolver for the SearchMovies field.
-func (r *queryResolver) SearchMovies(ctx context.Context, filter *model.MovieSearchFilter, sortBy *model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-	movies,err := repo.SearchMovies(filter, sortBy, limit, offset)
+func (r *queryResolver) SearchMovies(ctx context.Context, filter *model.MovieSearchFilter, sortBy model.MovieSearchSort, limit int, offset int) ([]*model.Movie, error) {
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	movies, err := repo.SearchMovies(filter, sortBy, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +83,7 @@ func (r *queryResolver) SearchMovies(ctx context.Context, filter *model.MovieSea
 
 // FetchMovie is the resolver for the FetchMovie field.
 func (r *queryResolver) FetchMovie(ctx context.Context, movieID string) (*model.Movie, error) {
-	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
+	repo := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
 	movie, err := repo.FetchMovieByID(movieID)
 	if err != nil {
 		return nil, err
@@ -101,4 +95,3 @@ func (r *queryResolver) FetchMovie(ctx context.Context, movieID string) (*model.
 func (r *Resolver) Movie() MovieResolver { return &movieResolver{r} }
 
 type movieResolver struct{ *Resolver }
-

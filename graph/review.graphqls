@@ -40,6 +40,17 @@ type MovieReview{
   reviewer:String
 }
 
+input MovieReviewSearchFilter {
+  comment: String
+  reviewer:String
+}
+
+enum MovieReviewSearchSort {
+    NEWEST
+    OLDEST
+    RATING_ASC
+    RATING_DESC
+}
 
 extend type Mutation {
   CreateMovieReview(input: NewMovieReview!): ID! @isAuthenticated
@@ -52,6 +63,6 @@ type Subscription {
 }
 
 extend type Query {
-  SearchMovieReviewByComment(comment: String!, limit: Int! = 25, offset: Int! = 0): [MovieReview!]! @isAuthenticated
+  SearchMovieReviews(filter: MovieReviewSearchFilter,sortBy: MovieReviewSearchSort! = NEWEST, limit: Int! = 25, offset: Int! = 0): [MovieReview!]! @isAuthenticated
   FetchMovieReviewsByMovieID(movieID: String!, limit: Int! = 25, offset: Int! = 0): [MovieReview!]! @isAuthenticated
 }

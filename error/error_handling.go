@@ -2,6 +2,8 @@ package error
 
 import (
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/gookit/validate"
 	"github.com/lib/pq"
@@ -12,15 +14,24 @@ func init() {
 	validate.Config(func(opt *validate.GlobalOption) {
 		opt.StopOnError = false
 	})
-	// validate.AddValidator("emailOrPhoneNumber", func(val any) bool {
-	// 	// do validate val ...
-
-	// 	return true
-	// })
+	//passwordRegex validator to check that field must have one special character, one capital letter, one small character, one digit 
+	validate.AddValidator("passwordRegex", func(val any) bool {
+		conditions := []string{".{7,}", "[a-z]", "[A-Z]", "[0-9]", "[^\\d\\w]"}
+		for _, condition := range conditions {
+			conditionMatch, _ := regexp.MatchString(condition, val.(string))
+			if !conditionMatch {
+				return false
+			}
+		}
+		return true
+	})
+	//isNotJustWhitespace validator to check that field not contain only white space characters only
+	validate.AddValidator("isNotJustWhitespace", func(val any) bool {
+		return len(strings.TrimSpace(val.(string))) > 0
+	})
 	validate.AddGlobalMessages(map[string]string{
-		// "required": "oh! the {field} is required",
-		"passwordRegex": "{field} atleast contain one small letter, one capital letter, one digit and one special character.",
-		// "emailOrPhoneNumber": "phoneNumber and countryCode must be null with the email",
+		"passwordRegex":       "{field} atleast contain one small letter, one capital letter, one digit and one special character.",
+		"isNotJustWhitespace": "{field} has only whitspace characters.",
 	})
 }
 
@@ -106,7 +117,9 @@ func DatabaseErrorHandling(err error) error {
 		case "23514":
 			// check constraint violation
 			return CheckConstraintError
+
 		}
+
 	}
 	return InternalServerError
 }

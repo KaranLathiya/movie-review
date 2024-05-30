@@ -34,7 +34,7 @@ func UserLogin(db *sql.DB, user request.UserLogin) (string, error) {
 	return id, nil
 }
 
-func CheckRoleOfUser(db *sql.DB, userID string) (string, error) {
+func FetchRoleOfUser(db *sql.DB, userID string) (string, error) {
 	var role string
 	err := db.QueryRow("SELECT role from users WHERE id = $1", userID).Scan(&role)
 	if err != nil {

@@ -49,7 +49,7 @@ extend type Mutation {
 }
 
 extend type Query {
-  SearchMovies(filter: MovieSearchFilter,sortBy: MovieSearchSort = NEWEST, limit: Int! = 25, offset: Int! = 0): [Movie!]! @isAuthenticated
+  SearchMovies(filter: MovieSearchFilter,sortBy: MovieSearchSort! = NEWEST, limit: Int! = 25, offset: Int! = 0): [Movie!]! @isAuthenticated
   FetchMovie(movieID: String!): Movie! @isAuthenticated
 }
 

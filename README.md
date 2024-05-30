@@ -8,8 +8,8 @@ Movie review system for create/update/delete movies and movie reviews.
 - Only Admin can create/update/delete movies.
 - User can create/update/delete movie reviews.
 - Can fetch movies and movie reviews.
-- Can serach movies with different filters like movie title(full text search), movie director name and different sorting with recently created, movie title , movie average rating.
-- Limiting in movie review. (maximum 3 revies can be added in 10 minutes)
+- Can serach movies with different filters like movie title(full text search), movie director name and different sorting with recently created, movie title, movie average rating with ascending and descending options.
+- Limiting in movie review. (maximum 3 reviews can be added in 10 minutes)
 - Can serach movie revies with comment(full text search),
 
 # Tech Stack 

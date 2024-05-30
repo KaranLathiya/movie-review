@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// add repo in the context
 func AddRepoToContext(repos *repository.Repositories) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -16,7 +17,8 @@ func AddRepoToContext(repos *repository.Repositories) func(http.Handler) http.Ha
 	}
 }
 
-func Middleware(next http.Handler) http.Handler {
+// add accesstoken in the context (from header)
+func AddAccessTokenToContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.Header.Get(constant.HEADER_KEY_AUTHORIZATION)
 

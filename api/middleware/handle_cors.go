@@ -2,6 +2,7 @@ package middleware
 
 import "net/http"
 
+//to prevent CORS error
 func HandleCORS(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
