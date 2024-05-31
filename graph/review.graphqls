@@ -26,7 +26,7 @@ type MovieReviewNotification{
   review: MovieReview
   averageRating: Float
   director:String
-  updatedBy:String
+  updater:String
 }
 
 type MovieReview{
@@ -59,7 +59,7 @@ extend type Mutation {
 }
 
 type Subscription { 
-    movieReviewNotification: MovieReviewNotification! @isAuthenticated
+    movieReviewNotification(movieID: ID!): MovieReviewNotification! 
 }
 
 extend type Query {

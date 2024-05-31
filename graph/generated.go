@@ -88,8 +88,8 @@ type ComplexityRoot struct {
 		Review          func(childComplexity int) int
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
-		UpdatedBy       func(childComplexity int) int
 		UpdatedByUserID func(childComplexity int) int
+		Updater         func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -112,7 +112,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		MovieReviewNotification func(childComplexity int) int
+		MovieReviewNotification func(childComplexity int, movieID string) int
 	}
 
 	Token struct {
@@ -147,7 +147,7 @@ type QueryResolver interface {
 	FetchMovieReviewsByMovieID(ctx context.Context, movieID string, limit int, offset int) ([]*model.MovieReview, error)
 }
 type SubscriptionResolver interface {
-	MovieReviewNotification(ctx context.Context) (<-chan *model.MovieReviewNotification, error)
+	MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error)
 }
 
 type executableSchema struct {
@@ -365,19 +365,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MovieReviewNotification.UpdatedAt(childComplexity), true
 
-	case "MovieReviewNotification.updatedBy":
-		if e.complexity.MovieReviewNotification.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.MovieReviewNotification.UpdatedBy(childComplexity), true
-
 	case "MovieReviewNotification.updatedByUserID":
 		if e.complexity.MovieReviewNotification.UpdatedByUserID == nil {
 			break
 		}
 
 		return e.complexity.MovieReviewNotification.UpdatedByUserID(childComplexity), true
+
+	case "MovieReviewNotification.updater":
+		if e.complexity.MovieReviewNotification.Updater == nil {
+			break
+		}
+
+		return e.complexity.MovieReviewNotification.Updater(childComplexity), true
 
 	case "Mutation.CreateMovie":
 		if e.complexity.Mutation.CreateMovie == nil {
@@ -535,7 +535,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Subscription.MovieReviewNotification(childComplexity), true
+		args, err := ec.field_Subscription_movieReviewNotification_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.MovieReviewNotification(childComplexity, args["movieID"].(string)), true
 
 	case "Token.AccessToken":
 		if e.complexity.Token.AccessToken == nil {
@@ -980,6 +985,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_movieReviewNotification_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["movieID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movieID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["movieID"] = arg0
 	return args, nil
 }
 
@@ -2252,8 +2272,8 @@ func (ec *executionContext) fieldContext_MovieReviewNotification_director(_ cont
 	return fc, nil
 }
 
-func (ec *executionContext) _MovieReviewNotification_updatedBy(ctx context.Context, field graphql.CollectedField, obj *model.MovieReviewNotification) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_MovieReviewNotification_updatedBy(ctx, field)
+func (ec *executionContext) _MovieReviewNotification_updater(ctx context.Context, field graphql.CollectedField, obj *model.MovieReviewNotification) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReviewNotification_updater(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2266,7 +2286,7 @@ func (ec *executionContext) _MovieReviewNotification_updatedBy(ctx context.Conte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
+		return obj.Updater, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2280,7 +2300,7 @@ func (ec *executionContext) _MovieReviewNotification_updatedBy(ctx context.Conte
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_MovieReviewNotification_updatedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_MovieReviewNotification_updater(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "MovieReviewNotification",
 		Field:      field,
@@ -3473,28 +3493,8 @@ func (ec *executionContext) _Subscription_movieReviewNotification(ctx context.Co
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Subscription().MovieReviewNotification(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsAuthenticated == nil {
-				return nil, errors.New("directive isAuthenticated is not implemented")
-			}
-			return ec.directives.IsAuthenticated(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(<-chan *model.MovieReviewNotification); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *movie-review/graph/model.MovieReviewNotification`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().MovieReviewNotification(rctx, fc.Args["movieID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3525,7 +3525,7 @@ func (ec *executionContext) _Subscription_movieReviewNotification(ctx context.Co
 	}
 }
 
-func (ec *executionContext) fieldContext_Subscription_movieReviewNotification(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Subscription_movieReviewNotification(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Subscription",
 		Field:      field,
@@ -3553,11 +3553,22 @@ func (ec *executionContext) fieldContext_Subscription_movieReviewNotification(_ 
 				return ec.fieldContext_MovieReviewNotification_averageRating(ctx, field)
 			case "director":
 				return ec.fieldContext_MovieReviewNotification_director(ctx, field)
-			case "updatedBy":
-				return ec.fieldContext_MovieReviewNotification_updatedBy(ctx, field)
+			case "updater":
+				return ec.fieldContext_MovieReviewNotification_updater(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MovieReviewNotification", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_movieReviewNotification_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6000,8 +6011,8 @@ func (ec *executionContext) _MovieReviewNotification(ctx context.Context, sel as
 			out.Values[i] = ec._MovieReviewNotification_averageRating(ctx, field, obj)
 		case "director":
 			out.Values[i] = ec._MovieReviewNotification_director(ctx, field, obj)
-		case "updatedBy":
-			out.Values[i] = ec._MovieReviewNotification_updatedBy(ctx, field, obj)
+		case "updater":
+			out.Values[i] = ec._MovieReviewNotification_updater(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

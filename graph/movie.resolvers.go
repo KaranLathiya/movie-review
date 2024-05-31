@@ -33,7 +33,8 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input request.NewMov
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
-		} else if err == error_handling.UniqueKeyConstraintError {
+		}
+		if err == error_handling.UniqueKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.MovieTitleAlreadyExist
 		}
 		return constant.EMPTY_STRING, err
@@ -53,7 +54,8 @@ func (r *mutationResolver) UpdateMovie(ctx context.Context, input request.Update
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.UserDoesNotExist
-		} else if err == error_handling.UniqueKeyConstraintError {
+		}
+		if err == error_handling.UniqueKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.MovieTitleAlreadyExist
 		}
 		return constant.EMPTY_STRING, err

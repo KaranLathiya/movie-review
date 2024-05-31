@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -17,7 +16,6 @@ func ValidateStruct(data interface{}, addValidationRules map[string]string) erro
 	if !(validator.Validate()) {
 		var invalidDataArray []error_handling.InvalidData
 		errors := validator.Errors.All()
-		fmt.Println(errors) // all error messages
 		for key, value := range errors {
 			invalidData := error_handling.InvalidData{
 				Field: key,

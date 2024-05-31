@@ -23,8 +23,8 @@ func AddAccessTokenToContext(next http.Handler) http.Handler {
 		accessToken := r.Header.Get(constant.HEADER_KEY_AUTHORIZATION)
 
 		// Allow unauthenticated users in
-		if accessToken == "" {
-			ctx := context.WithValue(r.Context(), constant.AccessTokenCtxKey, "")
+		if accessToken == constant.EMPTY_STRING {
+			ctx := context.WithValue(r.Context(), constant.AccessTokenCtxKey, constant.EMPTY_STRING)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}

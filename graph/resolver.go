@@ -26,25 +26,24 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 		Resolvers: &Resolver{},
 	}
 
-	//to verify the user 
-	//check the accesstoken is valid or not if valid then parse userID otherwies throw error 
+	//to verify the user
+	//check the accesstoken is valid or not if valid then parse userID otherwies throw error
 	config.Directives.IsAuthenticated = func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
 		accessToken := ctx.Value(constant.AccessTokenCtxKey).(string)
-		if accessToken != "" {
+		if accessToken != constant.EMPTY_STRING {
 			userID, err := utils.VerifyJWT(accessToken)
 			if err != nil {
 				return nil, err
-			} else {
-				ctx := context.WithValue(ctx, constant.UserIDCtxKey, userID)
-				return next(ctx)
 			}
-		} else {
-			return nil, error_handling.HeaderDataMissing
+			ctx := context.WithValue(ctx, constant.UserIDCtxKey, userID)
+			return next(ctx)
 		}
+		return nil, error_handling.HeaderDataMissing
+
 	}
 
-	//check user is admin or not 
-	//for admin authorized actions allow only if admin otherwise throw error 
+	//check user is admin or not
+	//for admin authorized actions allow only if admin otherwise throw error
 	config.Directives.IsAdmin = func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
 		userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
 		roleOfUser, err := repo.FetchRoleOfUser(userID)
@@ -61,34 +60,3 @@ func NewRootResolvers(repo *repository.Repositories) Config {
 	}
 	return config
 }
-
-// func MarshalTimestamp(t time.Time) graphql.Marshaler {
-// 	timestamp := t.Unix() * 1000
-
-// 	return graphql.WriterFunc(func(w io.Writer) {
-// 		io.WriteString(w, strconv.FormatInt(timestamp, 10))
-// 	})
-// }
-
-// func UnmarshalTimestamp(v interface{}) (time.Time, error) {
-// 	if tmpStr, ok := v.(int); ok {
-// 		return time.Unix(int64(tmpStr), 0), nil
-// 	}
-// 	return time.Time{}, nil
-// }
-
-// func UserIDFromContext(ctx context.Context) (string) {
-// 	userID, _ := ctx.Value(constant.UserIDCtxKey).(string)
-// 	return userID
-// }
-
-// func RepoFromContext(ctx context.Context) (*repository.Repositories) {
-// 	repo, _ := ctx.Value(constant.RepoCtxKey).(*repository.Repositories)
-// 	return repo
-// }
-
-// func AccessTokenFromContext(ctx context.Context) (string) {
-// 	accessToken, _ := ctx.Value(constant.AccessTokenCtxKey).(string)
-// 	return accessToken
-// }
-

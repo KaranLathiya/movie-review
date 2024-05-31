@@ -44,7 +44,7 @@ type MovieReviewNotification struct {
 	Review          *MovieReview `json:"review,omitempty"`
 	AverageRating   *float64     `json:"averageRating,omitempty"`
 	Director        *string      `json:"director,omitempty"`
-	UpdatedBy       *string      `json:"updatedBy,omitempty"`
+	Updater         *string      `json:"updater,omitempty"`
 }
 
 type MovieReviewSearchFilter struct {

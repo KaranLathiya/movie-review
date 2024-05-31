@@ -13,6 +13,8 @@ import (
 	error_handling "movie-review/error"
 	"movie-review/graph/model"
 	"movie-review/utils"
+
+	"github.com/markbates/going/randx"
 )
 
 // CreateMovieReview is the resolver for the CreateMovieReview field.
@@ -39,7 +41,8 @@ func (r *mutationResolver) CreateMovieReview(ctx context.Context, input request.
 	if err != nil {
 		if err == error_handling.ForeignKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.MovieDoesNotExist
-		} else if err == error_handling.UniqueKeyConstraintError {
+		}
+		if err == error_handling.UniqueKeyConstraintError {
 			return constant.EMPTY_STRING, error_handling.MovieReviewAlreadyExist
 		}
 		return constant.EMPTY_STRING, err
@@ -98,8 +101,27 @@ func (r *queryResolver) FetchMovieReviewsByMovieID(ctx context.Context, movieID 
 }
 
 // MovieReviewNotification is the resolver for the movieReviewNotification field.
-func (r *subscriptionResolver) MovieReviewNotification(ctx context.Context) (<-chan *model.MovieReviewNotification, error) {
-	return MovieReviewNotificationChannel, nil
+func (r *subscriptionResolver) MovieReviewNotification(ctx context.Context, movieID string) (<-chan *model.MovieReviewNotification, error) {
+	//to generate random string
+	randomString := randx.String(8)
+	//movieReviewNotificationEvent is channel that, this subscription reading value from
+	movieReviewNotificationEvent := make(chan *model.MovieReviewNotification, 1)
+	//movieReviewNotificationChannelMap to store channel with particular movieID 
+	// it is always creates new map with similar movieID 
+	movieReviewNotificationChannelMap := map[string]chan *model.MovieReviewNotification{}
+	movieReviewNotificationChannelMap[movieID] = movieReviewNotificationEvent
+	//store movieReviewNotificationChannelMap as value in movieReviewNotificationMap using key randomString
+	movieReviewNotificationMap[randomString] = movieReviewNotificationChannelMap
+	go func() {
+		//to check that particular subsription is canceled or not 
+		<-ctx.Done()
+		//once subscription canceled then below code of lines execute (for memory clean)
+		//close the channel from that this subscription reading values
+		close(movieReviewNotificationEvent)
+		//delete the map value of key random string
+		delete(movieReviewNotificationMap, randomString)
+	}()
+	return movieReviewNotificationEvent, nil
 }
 
 // Subscription returns SubscriptionResolver implementation.
@@ -113,6 +135,13 @@ type subscriptionResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+
+var movieReviewNotificationMap map[string]map[string]chan *model.MovieReviewNotification
+
+func init() {
+	movieReviewNotificationMap = map[string]map[string]chan *model.MovieReviewNotification{}
+}
+
 func movieReviewNotification(repo *repository.Repositories, input request.NewMovieReview, reviewID string, userID string) {
 	movie, err := repo.FetchMovieByID(input.MovieID)
 	if err != nil {
@@ -120,7 +149,15 @@ func movieReviewNotification(repo *repository.Repositories, input request.NewMov
 		return
 	}
 	movieReviewNotification := movieReviewNotificationModelCreate(input, movie, reviewID, userID)
-	MovieReviewNotificationChannel <- movieReviewNotification
+	//iterate over all random strings to get movieReviewNotificationChannelMap
+	for _, movieReviewNotificationChannelMap := range movieReviewNotificationMap {
+		//in movieReviewNotificationChannelMap pass movieID as key so if value available then it gives the channel in that we can send details of new movie revies  
+		observer, ok := movieReviewNotificationChannelMap[input.MovieID]
+		if ok {
+			//write value in that channel so can read it by subscription 
+			observer <- movieReviewNotification
+		}
+	}
 }
 func movieReviewNotificationModelCreate(input request.NewMovieReview, movie *model.Movie, reviewID string, userID string) *model.MovieReviewNotification {
 	movieReviewNotification := &model.MovieReviewNotification{
@@ -133,7 +170,7 @@ func movieReviewNotificationModelCreate(input request.NewMovieReview, movie *mod
 		UpdatedByUserID: movie.UpdatedByUserID,
 		AverageRating:   movie.AverageRating,
 		Director:        movie.Director,
-		UpdatedBy:       movie.UpdatedBy,
+		Updater:         movie.UpdatedBy,
 		Review: &model.MovieReview{
 			ID:         &reviewID,
 			MovieID:    &input.MovieID,
@@ -144,5 +181,3 @@ func movieReviewNotificationModelCreate(input request.NewMovieReview, movie *mod
 	}
 	return movieReviewNotification
 }
-
-var MovieReviewNotificationChannel = make(chan *model.MovieReviewNotification)
