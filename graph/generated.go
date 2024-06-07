@@ -60,7 +60,7 @@ type ComplexityRoot struct {
 		Director        func(childComplexity int) int
 		DirectorID      func(childComplexity int) int
 		ID              func(childComplexity int) int
-		Reviews         func(childComplexity int) int
+		Reviews         func(childComplexity int, limit int, offset int) int
 		Title           func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 		UpdatedBy       func(childComplexity int) int
@@ -127,7 +127,7 @@ type ComplexityRoot struct {
 }
 
 type MovieResolver interface {
-	Reviews(ctx context.Context, obj *model.Movie) ([]*model.MovieReview, error)
+	Reviews(ctx context.Context, obj *model.Movie, limit int, offset int) ([]*model.MovieReview, error)
 }
 type MutationResolver interface {
 	UserSignup(ctx context.Context, input request.UserSignup) (string, error)
@@ -216,7 +216,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Movie.Reviews(childComplexity), true
+		args, err := ec.field_Movie_reviews_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Movie.Reviews(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Movie.title":
 		if e.complexity.Movie.Title == nil {
@@ -720,6 +725,30 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Movie_reviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_CreateMovieReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1345,7 +1374,7 @@ func (ec *executionContext) _Movie_reviews(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Movie().Reviews(rctx, obj)
+		return ec.resolvers.Movie().Reviews(rctx, obj, fc.Args["limit"].(int), fc.Args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1359,7 +1388,7 @@ func (ec *executionContext) _Movie_reviews(ctx context.Context, field graphql.Co
 	return ec.marshalOMovieReview2ᚕᚖmovieᚑreviewᚋgraphᚋmodelᚐMovieReview(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Movie_reviews(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Movie_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Movie",
 		Field:      field,
@@ -1386,6 +1415,17 @@ func (ec *executionContext) fieldContext_Movie_reviews(_ context.Context, field 
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MovieReview", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Movie_reviews_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }

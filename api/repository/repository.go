@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"movie-review/api/dal"
 	"movie-review/api/model/request"
+	"movie-review/api/model/response"
 	"movie-review/constant"
 	error_handling "movie-review/error"
 	"movie-review/graph/model"
@@ -33,6 +34,7 @@ type Repository interface {
 	FetchMovieByID(movieID string) (*model.Movie, error)
 	SearchMovieReviews(filter *model.MovieReviewSearchFilter, sortBy model.MovieReviewSearchSort, limit int, offset int) (*model.MovieReview, error)
 	FetchUserDetailsByID(userID string) (*model.UserDetails, error)
+	FetchLimitedMovieReviewsUsingDataloader(movieReviewLimit []response.MovieReviewLimit) ([][]*model.MovieReview, []error)	
 }
 
 // for new user signup
@@ -195,6 +197,11 @@ func (r *Repositories) FetchMovieReviewsByMovieID(movieID string, limit int, off
 // for fetching reviews of movies by movieIDs
 func (r *Repositories) FetchMovieReviewsUsingDataloader(movieIDs []string) ([][]*model.MovieReview, []error) {
 	return dal.FetchMovieReviewsUsingDataloader(r.db, movieIDs)
+}
+
+// for fetching reviews of movies by movieIDs
+func (r *Repositories) FetchLimitedMovieReviewsUsingDataloader(movieReviewsLimit []response.MovieReviewLimit) ([][]*model.MovieReview, []error) {
+	return dal.FetchLimitedMovieReviewsUsingDataloader(r.db, movieReviewsLimit)
 }
 
 // check the review limit is exceeded or not by the user

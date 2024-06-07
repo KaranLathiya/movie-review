@@ -9,10 +9,11 @@ import (
 )
 
 type Loaders struct {
-	ReviewLoader *ReviewLoader
+	ReviewLoader      *ReviewLoader
+	ReviewLimitLoader *ReviewLimitLoader
 }
 
-//add loader in the context
+// add loader in the context
 func DataloaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -22,6 +23,11 @@ func DataloaderMiddleware(next http.Handler) http.Handler {
 			wait:     1 * time.Millisecond,
 			maxBatch: 100,
 			fetch:    repo.FetchMovieReviewsUsingDataloader,
+		}
+		loader.ReviewLimitLoader = &ReviewLimitLoader{
+			wait:     1 * time.Millisecond,
+			maxBatch: 100,
+			fetch:    repo.FetchLimitedMovieReviewsUsingDataloader,
 		}
 		ctx = context.WithValue(ctx, constant.LoaderCtxKey, &loader)
 		r = r.WithContext(ctx)

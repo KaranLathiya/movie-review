@@ -22,7 +22,7 @@ type Movie {
   createdAt: Timestamp
   updatedAt: Timestamp
   updatedByUserID:ID
-  reviews: [MovieReview]
+  reviews(limit: Int! = 25, offset: Int! = 0): [MovieReview]
   averageRating: Float
   director:String
   updatedBy:String

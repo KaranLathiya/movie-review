@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"movie-review/api/model/request"
+	"movie-review/api/model/response"
 	"movie-review/constant"
 	error_handling "movie-review/error"
 	"movie-review/graph/model"
@@ -97,6 +98,47 @@ func FetchMovieReviewsByMovieID(db *sql.DB, movieID string, limit int, offset in
 
 func FetchMovieReviewsUsingDataloader(db *sql.DB, movieIDs []string) ([][]*model.MovieReview, []error) {
 	sqlQuery := "SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name FROM review r INNER JOIN users u ON r.reviewer_id = u.id WHERE r.movie_id IN (?) ORDER BY r.created_at DESC"
+	sqlQuery, arguments, err := sqlx.In(sqlQuery, movieIDs)
+	if err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	sqlQuery = sqlx.Rebind(sqlx.DOLLAR, sqlQuery)
+	rows, err := db.Query(sqlQuery, arguments...)
+	if err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	movieReviewMap := map[string][]*model.MovieReview{}
+	for rows.Next() {
+		movieReview := model.MovieReview{}
+		if err = rows.Scan(&movieReview.ID, &movieReview.MovieID, &movieReview.ReviewerID, &movieReview.Rating, &movieReview.Comment, &movieReview.CreatedAt, &movieReview.UpdatedAt, &movieReview.Reviewer); err != nil {
+			return nil, []error{error_handling.InternalServerError}
+		}
+		if _, ok := movieReviewMap[*movieReview.MovieID]; ok {
+			movieReviewMap[*movieReview.MovieID] = append(movieReviewMap[*movieReview.MovieID], &movieReview)
+		} else {
+			movieReviewArr := []*model.MovieReview{}
+			movieReviewArr = append(movieReviewArr, &movieReview)
+			movieReviewMap[*movieReview.MovieID] = movieReviewArr
+		}
+	}
+	if err = rows.Close(); err != nil {
+		return nil, []error{error_handling.InternalServerError}
+	}
+	movieReviews := make([][]*model.MovieReview, len(movieIDs))
+	for i, id := range movieIDs {
+		movieReviews[i] = movieReviewMap[id]
+		i++
+	}
+	return movieReviews, nil
+}
+
+func FetchLimitedMovieReviewsUsingDataloader(db *sql.DB, movieReviewsLimit []response.MovieReviewLimit) ([][]*model.MovieReview, []error) {
+	sqlQuery := fmt.Sprintf(`WITH RankedReviews AS (SELECT r.id, r.movie_id, r.reviewer_id, r.rating, r.comment, r.created_at, r.updated_at, u.full_name AS reviewer_name, ROW_NUMBER() OVER (PARTITION BY r.movie_id ORDER BY r.created_at DESC) AS rn FROM review r JOIN users u ON r.reviewer_id = u.id)
+			SELECT id, movie_id, reviewer_id, rating, comment, created_at, updated_at, reviewer_name FROM RankedReviews WHERE rn <= %d AND rn > %d AND movie_id IN (?) ORDER BY created_at DESC, rn;`, movieReviewsLimit[0].Offset+movieReviewsLimit[0].Limit, movieReviewsLimit[0].Offset)
+	var movieIDs []string
+	for _, movieReviewLimit := range movieReviewsLimit {
+		movieIDs = append(movieIDs, movieReviewLimit.ID)
+	}
 	sqlQuery, arguments, err := sqlx.In(sqlQuery, movieIDs)
 	if err != nil {
 		return nil, []error{error_handling.InternalServerError}
